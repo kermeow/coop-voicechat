@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"coop-voicechat/coop"
 	"coop-voicechat/fonts"
 	"image/color"
 
@@ -16,7 +17,8 @@ import (
 type UI struct {
 	*app.Window
 
-	theme *material.Theme
+	theme  *material.Theme
+	bridge *coop.Bridge
 }
 
 type (
@@ -24,7 +26,7 @@ type (
 	D = layout.Dimensions
 )
 
-func New() *UI {
+func New(bridge *coop.Bridge) *UI {
 	width := unit.Dp(360)
 	height := unit.Dp(96)
 
@@ -48,6 +50,7 @@ func New() *UI {
 	return &UI{
 		Window: window,
 		theme:  &theme,
+		bridge: bridge,
 	}
 }
 

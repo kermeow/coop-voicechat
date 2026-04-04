@@ -20,8 +20,12 @@ func main() {
 
 	coop.EnsureDirs()
 
+	bridge := coop.NewBridge()
+	ui := ui.New(bridge)
+
+	go bridge.Run()
+
 	go func() {
-		ui := ui.New()
 		if err := ui.Run(); err != nil {
 			log.Fatal(err)
 		}
