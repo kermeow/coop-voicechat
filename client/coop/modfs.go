@@ -36,7 +36,7 @@ func ModFSGet(modPath string) (*ModFS, error) {
 
 func (m *ModFS) Get(fileName string) (*ModFSFile, error) {
 	if _, ok := m.files[fileName]; !ok {
-		m.Read(false)
+		return nil, os.ErrNotExist
 	}
 	return m.files[fileName], nil
 }
@@ -134,4 +134,10 @@ func (m *ModFS) Write() (bool, error) {
 	file.Write(buf.Bytes())
 
 	return true, nil
+}
+
+func (f *ModFSFile) Buf() *bytes.Buffer {
+	data := make([]byte, len(f.Data))
+	copy(data, f.Data)
+	return bytes.NewBuffer(data)
 }
