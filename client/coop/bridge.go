@@ -1,15 +1,22 @@
 package coop
 
-import "time"
+import (
+	"encoding/binary"
+	"time"
+)
 
 const POLL_FREQUENCY = 60
 const POLL_INTERVAL = 1000 / POLL_FREQUENCY
 const SLEEPING_POLL_INTERVAL = 1000
+const TIMEOUT_THRESHOLD = POLL_FREQUENCY / 2
 
 type Bridge struct {
 	Active bool
 
-	syncFails  int
+	ackSyncId     uint32
+	localSyncId   uint32
+	clientFlushed bool
+
 	send_modfs *ModFS
 	recv_modfs *ModFS
 }
@@ -28,8 +35,11 @@ func NewBridge() *Bridge {
 	recv_modfs.Write()
 
 	return &Bridge{
-		Active:     false,
-		syncFails:  0,
+		Active: false,
+
+		ackSyncId:   0,
+		localSyncId: 0,
+
 		send_modfs: send_modfs,
 		recv_modfs: recv_modfs,
 	}
@@ -49,19 +59,17 @@ func (b *Bridge) Run() {
 func (b *Bridge) poll() {
 	b.recv_modfs.Read(false)
 	if !b.recvSync() {
-		if b.Active {
-			b.syncFails++
-			if b.syncFails > POLL_FREQUENCY {
-				b.Active = false
-			}
-		}
+		b.Active = false
 		return
 	}
 
 	b.Active = true
-	b.syncFails = 0
 
-	// todo: write data to send_modfs
+	if (b.clientFlushed) {
+		
+	}
+
+	b.sendSync()
 	b.send_modfs.Write()
 }
 
@@ -76,5 +84,22 @@ func (b *Bridge) recvSync() bool {
 		return false
 	}
 
+	ack := binary.BigEndian.Uint32(syncData)
+
+	b.clientFlushed = ack > b.ackSyncId
+
+	b.ackSyncId = ack
+	if b.ackSyncId+TIMEOUT_THRESHOLD <= b.localSyncId {
+		return false
+	}
+
 	return true
+}
+
+func (b *Bridge) sendSync() {
+	b.localSyncId++
+
+	syncFile := b.send_modfs.Create("sync")
+	syncFile.Data = make([]byte, 4)
+	binary.BigEndian.PutUint32(syncFile.Data, b.localSyncId)
 }

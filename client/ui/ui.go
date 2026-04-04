@@ -64,11 +64,16 @@ func (ui *UI) Run() error {
 			gtx := app.NewContext(&ops, e)
 			paint.Fill(gtx.Ops, ui.theme.Bg)
 
+			statusText := "Inactive"
+			if ui.bridge.Active {
+				statusText = "Active"
+			}
+
 			layout.UniformInset(unit.Dp(16)).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceAround}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceSides}.Layout(gtx,
-							layout.Rigid(material.Label(ui.theme, unit.Sp(16), "Welcome to my voice chats").Layout),
+							layout.Rigid(material.Label(ui.theme, unit.Sp(16), statusText).Layout),
 						)
 					}),
 				)
