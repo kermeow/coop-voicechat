@@ -1,8 +1,9 @@
-package dirs
+package coop
 
 import (
 	"os"
 	"path"
+	"runtime"
 )
 
 func ensureDir(dir string) {
@@ -18,6 +19,14 @@ func findAppData() string {
 	appdata, err := os.UserConfigDir()
 	if err != nil {
 		panic(err)
+	}
+
+	if runtime.GOOS == "linux" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			panic(err)
+		}
+		appdata = path.Join(home, ".local", "share")
 	}
 
 	if stat, err := os.Stat(path.Join(appdata, "sm64ex-coop")); err == nil && stat.IsDir() {
