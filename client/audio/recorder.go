@@ -7,8 +7,8 @@ import (
 
 type Recorder struct {
 	OpusFrames [][]byte
+	Running    bool
 
-	started bool
 	stop    bool
 	stopped chan bool
 	rawBuf  []int16
@@ -37,10 +37,9 @@ func NewRecorder() (*Recorder, error) {
 
 	return &Recorder{
 		OpusFrames: make([][]byte, 0),
+		Running:    false,
 
-		started: false,
 		stop:    false,
-		stopped: make(chan bool),
 		rawBuf:  rawBuf,
 		encBuf:  encBuf,
 		stream:  stream,
@@ -59,7 +58,7 @@ func (r *Recorder) encode() error {
 }
 
 func (r *Recorder) Start() error {
-	if r.started {
+	if r.Running {
 		return nil
 	}
 
@@ -69,11 +68,10 @@ func (r *Recorder) Start() error {
 	}
 	defer r.stream.Stop()
 
-	r.started = true
+	r.Running = true
 
 	for {
 		if r.stop {
-			r.stopped <- true
 			break
 		}
 
@@ -92,12 +90,12 @@ func (r *Recorder) Start() error {
 }
 
 func (r *Recorder) Stop() {
-	if !r.started {
+	if !r.Running {
 		return
 	}
 
 	r.stop = true
-	r.started = false
+	r.Running = false
 }
 
 func (r *Recorder) Read() ([][]byte, error) {

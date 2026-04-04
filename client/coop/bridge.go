@@ -1,17 +1,20 @@
 package coop
 
 import (
+	"bytes"
+	"coop-voicechat/audio"
 	"encoding/binary"
 	"time"
 )
 
 const POLL_FREQUENCY = 60
 const POLL_INTERVAL = 1000 / POLL_FREQUENCY
-const SLEEPING_POLL_INTERVAL = 1000
+const SLEEPING_POLL_INTERVAL = 100
 const TIMEOUT_THRESHOLD = POLL_FREQUENCY / 2
 
 type Bridge struct {
-	Active bool
+	Active   bool
+	Recorder *audio.Recorder
 
 	ackSyncId     uint32
 	localSyncId   uint32
@@ -56,17 +59,56 @@ func (b *Bridge) Run() {
 	}
 }
 
+func (b *Bridge) activated() {
+	if b.Recorder == nil {
+		recorder, err := audio.NewRecorder()
+		if err == nil {
+			b.Recorder = recorder
+		}
+	}
+	if b.Recorder != nil {
+		go b.Recorder.Start()
+	}
+	b.localSyncId = 0
+}
+
+func (b *Bridge) deactivated() {
+	if b.Recorder != nil {
+		b.Recorder.Stop()
+	}
+	b.localSyncId = 0
+}
+
 func (b *Bridge) poll() {
 	b.recv_modfs.Read(false)
 	if !b.recvSync() {
-		b.Active = false
+		if b.Active {
+			b.deactivated()
+			b.Active = false
+		}
 		return
 	}
 
-	b.Active = true
+	if !b.Active {
+		b.activated()
+		b.Active = true
+	}
 
-	if (b.clientFlushed) {
-		
+	if b.clientFlushed {
+		if b.Recorder != nil && b.Recorder.Running {
+			buf := bytes.Buffer{}
+			opusFrames, err := b.Recorder.Read()
+			if err == nil {
+				for _, v := range opusFrames {
+					data := make([]byte, 4+len(v))
+					binary.NativeEndian.PutUint32(data, uint32(len(v)))
+					copy(data[4:], v)
+					buf.Write(data)
+				}
+			}
+			file := b.send_modfs.Create("recording")
+			file.Data = buf.Bytes()
+		}
 	}
 
 	b.sendSync()
@@ -84,11 +126,11 @@ func (b *Bridge) recvSync() bool {
 		return false
 	}
 
-	ack := binary.BigEndian.Uint32(syncData)
+	ack := binary.NativeEndian.Uint32(syncData)
 
 	b.clientFlushed = ack > b.ackSyncId
-
 	b.ackSyncId = ack
+
 	if b.ackSyncId+TIMEOUT_THRESHOLD <= b.localSyncId {
 		return false
 	}
@@ -101,5 +143,5 @@ func (b *Bridge) sendSync() {
 
 	syncFile := b.send_modfs.Create("sync")
 	syncFile.Data = make([]byte, 4)
-	binary.BigEndian.PutUint32(syncFile.Data, b.localSyncId)
+	binary.NativeEndian.PutUint32(syncFile.Data, b.localSyncId)
 }
