@@ -1,7 +1,7 @@
 package coop
 
 import (
-	"coop-voicechat/audio"
+	"log"
 	"time"
 )
 
@@ -11,9 +11,8 @@ const POLL_INTERVAL = 33           // 1/30
 const POLL_INTERVAL_INACTIVE = 100 // 1/10
 
 type Bridge struct {
-	Active   bool
-	Running  bool
-	Recorder *audio.Recorder
+	Connected bool
+	Running   bool
 
 	syncLocalFrame     uint32
 	syncRemoteFrame    uint32
@@ -37,8 +36,8 @@ func NewBridge() *Bridge {
 	recv_modfs.Write()
 
 	return &Bridge{
-		Active:  false,
-		Running: false,
+		Connected: false,
+		Running:   false,
 
 		syncLocalFrame:     1,
 		syncRemoteFrame:    0,
@@ -49,32 +48,22 @@ func NewBridge() *Bridge {
 	}
 }
 
-func (b *Bridge) activate() {
-	if b.Active {
+func (b *Bridge) connect() {
+	if b.Connected {
 		return
 	}
-	println("connected")
-	b.Active = true
-	if b.Recorder == nil {
-		recorder, err := audio.NewRecorder()
-		if err == nil {
-			b.Recorder = recorder
-		}
-	}
-	if b.Recorder != nil {
-		go b.Recorder.Start()
-	}
+	b.Connected = true
+
+	log.Println("Bridge connected")
 }
 
-func (b *Bridge) deactivate() {
-	if !b.Active {
+func (b *Bridge) disconnect() {
+	if !b.Connected {
 		return
 	}
-	println("disconnected")
-	b.Active = false
-	if b.Recorder != nil {
-		b.Recorder.Stop()
-	}
+	b.Connected = false
+
+	log.Println("Bridge disconnected")
 }
 
 func (b *Bridge) poll() bool {
@@ -85,7 +74,7 @@ func (b *Bridge) poll() bool {
 		return false
 	}
 
-	lastActive := b.Active
+	lastActive := b.Connected
 	lastRemoteFrame := b.syncRemoteFrame
 
 	syncFile.Cursor = 0
@@ -99,13 +88,13 @@ func (b *Bridge) poll() bool {
 		// active means coop is running and acknowledging us
 		shouldActivate := ackFrameValid && ackFrameThreshold
 		if shouldActivate && !lastActive {
-			b.activate()
+			b.connect()
 		}
-		return b.Active
+		return b.Connected
 	}
 
 	if lastActive && !(ackFrameValid && ackFrameThreshold) {
-		b.deactivate()
+		b.disconnect()
 	}
 
 	return false
@@ -144,7 +133,7 @@ func (b *Bridge) Run() {
 	for b.Running {
 		b.update()
 		interval := POLL_INTERVAL * time.Millisecond
-		if !b.Active {
+		if !b.Connected {
 			interval = POLL_INTERVAL_INACTIVE * time.Millisecond
 		}
 		time.Sleep(interval)

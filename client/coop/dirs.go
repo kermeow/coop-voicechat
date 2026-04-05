@@ -36,11 +36,11 @@ func findAppData() string {
 }
 
 var (
-	AppData = findAppData()
-	Sav     = path.Join(AppData, "sav")
+	GameDir = findAppData()
+	SavDir  = path.Join(GameDir, "sav")
 )
 
 func EnsureDirs() {
-	ensureDir(AppData)
-	ensureDir(Sav)
+	ensureDir(GameDir)
+	ensureDir(SavDir)
 }

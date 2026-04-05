@@ -65,7 +65,7 @@ func (ui *UI) Run() error {
 			paint.Fill(gtx.Ops, ui.theme.Bg)
 
 			statusText := "Inactive"
-			if ui.bridge.Active {
+			if ui.bridge.Connected {
 				statusText = "Active"
 			}
 

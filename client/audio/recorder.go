@@ -5,6 +5,8 @@ import (
 	"gopkg.in/hraban/opus.v2"
 )
 
+const RECORDER_MAX_FRAMES = 64
+
 type Recorder struct {
 	OpusFrames [][]byte
 	Running    bool
@@ -50,7 +52,8 @@ func (r *Recorder) encode() error {
 		return err
 	}
 	frame := r.encBuf[:n]
-	r.OpusFrames = append(r.OpusFrames, frame)
+	i := max(0, len(r.OpusFrames)-RECORDER_MAX_FRAMES)
+	r.OpusFrames = append(r.OpusFrames[:i], frame)
 	return nil
 }
 

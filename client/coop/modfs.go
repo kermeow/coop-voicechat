@@ -12,6 +12,8 @@ import (
 
 var bin binary.ByteOrder = binary.LittleEndian
 
+// THIS IS AN INCOMPLETE IMPLEMENTATION __BY DESIGN__
+
 type ModFS struct {
 	path  string
 	files map[string]*ModFSFile
@@ -27,7 +29,7 @@ type ModFSProperties struct {
 
 func ModFSGet(modPath string) (*ModFS, error) {
 	m := &ModFS{
-		path:  path.Join(Sav, modPath+".modfs"),
+		path:  path.Join(SavDir, modPath+".modfs"),
 		files: make(map[string]*ModFSFile),
 	}
 	return m, nil
@@ -142,7 +144,7 @@ type ModFSFile struct {
 	Cursor int
 }
 
-// unused modfs rw functions: uint8, uint16, uint64, int8, int16, int32, int64, string, line
+// unused modfs rw functions: uint8, uint64, int8, int16, int32, int64, string, line
 
 func (f *ModFSFile) ReadBytes(l int) ([]byte, error) {
 	if f.Cursor+l > len(f.Data) {
@@ -151,6 +153,14 @@ func (f *ModFSFile) ReadBytes(l int) ([]byte, error) {
 	data := f.Data[f.Cursor : f.Cursor+l]
 	f.Cursor += l
 	return data, nil
+}
+
+func (f *ModFSFile) ReadUint16() (uint16, error) {
+	data, err := f.ReadBytes(2)
+	if err != nil {
+		return 0, err
+	}
+	return bin.Uint16(data), nil
 }
 
 func (f *ModFSFile) ReadUint32() (uint32, error) {
@@ -169,6 +179,12 @@ func (f *ModFSFile) WriteBytes(d []byte) error {
 	f.Data = data
 	f.Cursor += l
 	return nil
+}
+
+func (f *ModFSFile) WriteUint16(n uint16) error {
+	data := make([]byte, 2)
+	bin.PutUint16(data, n)
+	return f.WriteBytes(data)
 }
 
 func (f *ModFSFile) WriteUint32(n uint32) error {

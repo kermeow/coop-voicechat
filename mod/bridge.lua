@@ -7,7 +7,7 @@ do -- bridge_init
 
     gVoiceBridge = {}
 
-    gVoiceBridge.active = false
+    gVoiceBridge.connected = false
 
     gVoiceBridge.sendFS = mod_fs_get()
     gVoiceBridge.recvFS = mod_fs_get(RECV_MOD_FS_NAME)
@@ -20,13 +20,13 @@ do -- bridge_init
     gVoiceBridge.syncRemoteAckFrame = 0
 end
 
-local function bridge_activate()
-    gVoiceBridge.active = true
+local function bridge_connect()
+    gVoiceBridge.connected = true
     djui_chat_message_create("Voice chat connected")
 end
 
-local function bridge_deactivate()
-    gVoiceBridge.active = false
+local function bridge_disconnect()
+    gVoiceBridge.connected = false
     djui_chat_message_create("Voice chat disconnected")
 end
 
@@ -42,26 +42,26 @@ local function bridge_poll()
         return false
     end
 
-    local lastActive = gVoiceBridge.active
+    local lastActive = gVoiceBridge.connected
     local lastRemoteFrame = gVoiceBridge.syncRemoteFrame
 
     gVoiceBridge.syncRemoteFrame = syncFile:read_integer(INT_TYPE_U32)
     gVoiceBridge.syncRemoteAckFrame = syncFile:read_integer(INT_TYPE_U32)
 
-    local ackFrameValid = gVoiceBridge.syncRemoteAckFrame <= gVoiceBridge.syncLocalFrame
+    local ackFrameValid = gVoiceBridge.syncRemoteAckFrame > 0 and gVoiceBridge.syncRemoteAckFrame <= gVoiceBridge.syncLocalFrame
     local ackFrameThreshold = gVoiceBridge.syncLocalFrame - gVoiceBridge.syncRemoteAckFrame < 3
 
     if gVoiceBridge.syncRemoteFrame > lastRemoteFrame then
         -- active means the client is running and acknowledging us
         local shouldActivate = ackFrameValid and ackFrameThreshold
         if shouldActivate and not lastActive then
-            bridge_activate()
+            bridge_connect()
         end
-        return gVoiceBridge.active
+        return gVoiceBridge.connected
     end
 
     if lastActive and not (ackFrameValid and ackFrameThreshold) then
-        bridge_deactivate()
+        bridge_disconnect()
     end
 
     return false
