@@ -49,8 +49,12 @@ func NewBridge() *Bridge {
 	}
 }
 
-func (b *Bridge) activated() {
+func (b *Bridge) activate() {
+	if b.Active {
+		return
+	}
 	println("connected")
+	b.Active = true
 	if b.Recorder == nil {
 		recorder, err := audio.NewRecorder()
 		if err == nil {
@@ -62,8 +66,12 @@ func (b *Bridge) activated() {
 	}
 }
 
-func (b *Bridge) deactivated() {
+func (b *Bridge) deactivate() {
+	if !b.Active {
+		return
+	}
 	println("disconnected")
+	b.Active = false
 	if b.Recorder != nil {
 		b.Recorder.Stop()
 	}
@@ -85,24 +93,22 @@ func (b *Bridge) poll() bool {
 	b.syncRemoteAckFrame, _ = syncFile.ReadUint32()
 
 	ackFrameValid := b.syncRemoteAckFrame <= b.syncLocalFrame
-	ackFrameThreshold := b.syncLocalFrame-b.syncRemoteAckFrame < 6
+	ackFrameThreshold := b.syncLocalFrame-b.syncRemoteAckFrame < 3
 
 	if b.syncRemoteFrame > lastRemoteFrame {
 		// active means coop is running and acknowledging us
-		b.Active = ackFrameValid && ackFrameThreshold
-		if b.Active && !lastActive {
-			b.activated()
+		shouldActivate := ackFrameValid && ackFrameThreshold
+		if shouldActivate && !lastActive {
+			b.activate()
 		}
+		return b.Active
 	}
 
-	if !(ackFrameValid && ackFrameThreshold) {
-		b.Active = false
-		if lastActive {
-			b.deactivated()
-		}
+	if lastActive && !(ackFrameValid && ackFrameThreshold) {
+		b.deactivate()
 	}
 
-	return b.Active
+	return false
 }
 
 func (b *Bridge) recv() {

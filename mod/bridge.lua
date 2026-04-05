@@ -20,6 +20,16 @@ do -- bridge_init
     gVoiceBridge.syncRemoteAckFrame = 0
 end
 
+local function bridge_activate()
+    gVoiceBridge.active = true
+    djui_chat_message_create("Voice chat connected")
+end
+
+local function bridge_deactivate()
+    gVoiceBridge.active = false
+    djui_chat_message_create("Voice chat disconnected")
+end
+
 -- checks if new data is available
 local function bridge_poll()
     gVoiceBridge.recvFS = mod_fs_reload(RECV_MOD_FS_NAME)
@@ -43,20 +53,18 @@ local function bridge_poll()
 
     if gVoiceBridge.syncRemoteFrame > lastRemoteFrame then
         -- active means the client is running and acknowledging us
-        gVoiceBridge.active = ackFrameValid and ackFrameThreshold
-        if gVoiceBridge.active and not lastActive then
-            djui_chat_message_create("Voice chat client connected!")
+        local shouldActivate = ackFrameValid and ackFrameThreshold
+        if shouldActivate and not lastActive then
+            bridge_activate()
         end
+        return gVoiceBridge.active
     end
 
-    if not (ackFrameValid and ackFrameThreshold) then
-        gVoiceBridge.active = false
-        if lastActive then
-            djui_chat_message_create("Voice chat client disconnected! Please restart the client.")
-        end
+    if lastActive and not (ackFrameValid and ackFrameThreshold) then
+        bridge_deactivate()
     end
 
-    return gVoiceBridge.active
+    return false
 end
 
 -- handles new data
