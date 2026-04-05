@@ -3,19 +3,18 @@ package coop
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"io"
 	"os"
 	"path"
 )
 
+var bin binary.ByteOrder = binary.LittleEndian
+
 type ModFS struct {
 	path  string
 	files map[string]*ModFSFile
-}
-
-type ModFSFile struct {
-	Data []byte
 }
 
 type ModFSProperties struct {
@@ -43,7 +42,8 @@ func (m *ModFS) Get(fileName string) (*ModFSFile, error) {
 
 func (m *ModFS) Create(fileName string) *ModFSFile {
 	f := &ModFSFile{
-		Data: make([]byte, 0),
+		Data:   make([]byte, 0),
+		Cursor: 0,
 	}
 	m.files[fileName] = f
 	return f
@@ -77,7 +77,8 @@ func (m *ModFS) Read(onlyCheckExists bool) (bool, error) {
 			return false, err
 		}
 		m.files[v.Name] = &ModFSFile{
-			Data: data,
+			Data:   data,
+			Cursor: 0,
 		}
 	}
 
@@ -136,8 +137,42 @@ func (m *ModFS) Write() (bool, error) {
 	return true, nil
 }
 
-func (f *ModFSFile) Buf() *bytes.Buffer {
-	data := make([]byte, len(f.Data))
+type ModFSFile struct {
+	Data   []byte
+	Cursor int
+}
+
+// unused modfs rw functions: uint8, uint16, uint64, int8, int16, int32, int64, string, line
+
+func (f *ModFSFile) ReadBytes(l int) ([]byte, error) {
+	if f.Cursor+l > len(f.Data) {
+		return nil, io.ErrShortBuffer
+	}
+	data := f.Data[f.Cursor : f.Cursor+l]
+	f.Cursor += l
+	return data, nil
+}
+
+func (f *ModFSFile) ReadUint32() (uint32, error) {
+	data, err := f.ReadBytes(4)
+	if err != nil {
+		return 0, err
+	}
+	return bin.Uint32(data), nil
+}
+
+func (f *ModFSFile) WriteBytes(d []byte) error {
+	l := len(d)
+	data := make([]byte, max(len(f.Data), f.Cursor+l))
 	copy(data, f.Data)
-	return bytes.NewBuffer(data)
+	copy(data[f.Cursor:f.Cursor+l], d)
+	f.Data = data
+	f.Cursor += l
+	return nil
+}
+
+func (f *ModFSFile) WriteUint32(n uint32) error {
+	data := make([]byte, 4)
+	bin.PutUint32(data, n)
+	return f.WriteBytes(data)
 }
