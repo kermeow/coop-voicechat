@@ -9,8 +9,6 @@ type Recorder struct {
 	OpusFrames [][]byte
 	Running    bool
 
-	stop    bool
-	stopped chan bool
 	rawBuf  []int16
 	encBuf  []byte
 	stream  *portaudio.Stream
@@ -39,7 +37,6 @@ func NewRecorder() (*Recorder, error) {
 		OpusFrames: make([][]byte, 0),
 		Running:    false,
 
-		stop:    false,
 		rawBuf:  rawBuf,
 		encBuf:  encBuf,
 		stream:  stream,
@@ -70,11 +67,7 @@ func (r *Recorder) Start() error {
 
 	r.Running = true
 
-	for {
-		if r.stop {
-			break
-		}
-
+	for r.Running {
 		err := r.stream.Read()
 		if err != nil {
 			return err
@@ -94,7 +87,6 @@ func (r *Recorder) Stop() {
 		return
 	}
 
-	r.stop = true
 	r.Running = false
 }
 

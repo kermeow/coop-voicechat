@@ -1,9 +1,7 @@
 package coop
 
 import (
-	"bytes"
 	"coop-voicechat/audio"
-	"encoding/binary"
 	"time"
 )
 
@@ -15,13 +13,10 @@ const TIMEOUT_THRESHOLD = POLL_FREQUENCY / 2
 type Bridge struct {
 	Active   bool
 	Recorder *audio.Recorder
+	Running  bool
 
-	ackSyncId     uint32
-	localSyncId   uint32
-	clientFlushed bool
-
-	send_modfs *ModFS
-	recv_modfs *ModFS
+	sendFS *ModFS
+	recvFS *ModFS
 }
 
 func NewBridge() *Bridge {
@@ -38,28 +33,20 @@ func NewBridge() *Bridge {
 	recv_modfs.Write()
 
 	return &Bridge{
-		Active: false,
+		Active:  false,
+		Running: false,
 
-		ackSyncId:   0,
-		localSyncId: 0,
-
-		send_modfs: send_modfs,
-		recv_modfs: recv_modfs,
+		sendFS: send_modfs,
+		recvFS: recv_modfs,
 	}
 }
 
-func (b *Bridge) Run() {
-	for {
-		b.poll()
-		interval := POLL_INTERVAL * time.Millisecond
-		if !b.Active {
-			interval = SLEEPING_POLL_INTERVAL * time.Millisecond
-		}
-		time.Sleep(interval)
+func (b *Bridge) activate() {
+	if b.Active {
+		return
 	}
-}
+	b.Active = true
 
-func (b *Bridge) activated() {
 	if b.Recorder == nil {
 		recorder, err := audio.NewRecorder()
 		if err == nil {
@@ -69,79 +56,59 @@ func (b *Bridge) activated() {
 	if b.Recorder != nil {
 		go b.Recorder.Start()
 	}
-	b.localSyncId = 0
 }
 
-func (b *Bridge) deactivated() {
+func (b *Bridge) deactivate() {
+	if !b.Active {
+		return
+	}
+	b.Active = false
+
 	if b.Recorder != nil {
 		b.Recorder.Stop()
 	}
-	b.localSyncId = 0
 }
 
-func (b *Bridge) poll() {
-	b.recv_modfs.Read(false)
-	if !b.recvSync() {
-		if b.Active {
-			b.deactivated()
-			b.Active = false
-		}
+func (b *Bridge) poll() bool {
+	return false
+}
+
+func (b *Bridge) recv() {
+
+}
+
+func (b *Bridge) send() {
+
+}
+
+func (b *Bridge) update() {
+	if b.poll() {
+		b.recv()
+	}
+	b.send()
+}
+
+func (b *Bridge) Run() {
+	if b.Running {
 		return
 	}
 
-	if !b.Active {
-		b.activated()
-		b.Active = true
-	}
+	b.Running = true
 
-	if b.clientFlushed {
-		if b.Recorder != nil && b.Recorder.Running {
-			buf := bytes.Buffer{}
-			opusFrames, err := b.Recorder.Read()
-			if err == nil {
-				for _, v := range opusFrames {
-					data := make([]byte, 4+len(v))
-					binary.NativeEndian.PutUint32(data, uint32(len(v)))
-					copy(data[4:], v)
-					buf.Write(data)
-				}
-			}
-			file := b.send_modfs.Create("recording")
-			file.Data = buf.Bytes()
+	for b.Running {
+		b.update()
+		interval := POLL_INTERVAL * time.Millisecond
+		if !b.Active {
+			interval = SLEEPING_POLL_INTERVAL * time.Millisecond
 		}
+		time.Sleep(interval)
 	}
-
-	b.sendSync()
-	b.send_modfs.Write()
 }
 
-func (b *Bridge) recvSync() bool {
-	syncFile, err := b.recv_modfs.Get("sync")
-	if err != nil {
-		return false
+func (b *Bridge) Stop() {
+	if !b.Running {
+		return
 	}
 
-	syncData := syncFile.Data
-	if len(syncData) == 0 {
-		return false
-	}
-
-	ack := binary.NativeEndian.Uint32(syncData)
-
-	b.clientFlushed = ack > b.ackSyncId
-	b.ackSyncId = ack
-
-	if b.ackSyncId+TIMEOUT_THRESHOLD <= b.localSyncId {
-		return false
-	}
-
-	return true
-}
-
-func (b *Bridge) sendSync() {
-	b.localSyncId++
-
-	syncFile := b.send_modfs.Create("sync")
-	syncFile.Data = make([]byte, 4)
-	binary.NativeEndian.PutUint32(syncFile.Data, b.localSyncId)
+	b.Running = false
 }

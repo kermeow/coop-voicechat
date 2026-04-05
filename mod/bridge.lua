@@ -1,38 +1,35 @@
-mod_fs_hide_errors(true)
+gVoiceBridge = {}
 
-local send_modfs = mod_fs_get()
-local recv_modfs = mod_fs_get("coop-voicechat-recv")
+local RECV_MOD_FS_NAME = "coop-voicechat-recv"
 
-local syncId = 0
-local serverFlushed = false
+gVoiceBridge.active = false
 
-local function recvSync()
-    local syncFile = recv_modfs:get_file("sync")
-    if not syncFile then
-        return
-    end
-    sync = syncFile:read_integer(INT_TYPE_U32)
-    serverFlushed = sync > syncId
-    syncId = sync 
-end
+gVoiceBridge.sendFS = mod_fs_get()
+gVoiceBridge.recvFS = mod_fs_get(RECV_MOD_FS_NAME)
 
-local function sendSync()
-    local syncFile = send_modfs:get_file("sync") or send_modfs:create_file("sync", false)
-    syncFile:rewind()
-    syncFile:write_integer(syncId, INT_TYPE_U32)
-end
-
-local function poll()
-    recv_modfs = mod_fs_reload("coop-voicechat-recv")
-    if recv_modfs == nil then return end
-    recvSync()
-
-    if serverFlushed then
-        -- todo: send data
+-- checks if new data is available
+local function bridge_poll()
+    gVoiceBridge.recvFS = mod_fs_reload(RECV_MOD_FS_NAME)
+    if not gVoiceBridge.recvFS then
+        return false
     end
 
-    sendSync()
-    send_modfs:save()
+    return false
 end
 
-hook_event(HOOK_UPDATE, poll)
+-- handles new data
+local function bridge_recv()
+end
+
+-- sends new data
+local function bridge_send()
+end
+
+local function bridge_update()
+    if bridge_poll() then
+        bridge_recv()
+    end
+    bridge_send()
+end
+
+hook_event(HOOK_UPDATE, bridge_update)
