@@ -14,9 +14,12 @@ type Bridge struct {
 	Connected bool
 	Running   bool
 
-	syncLocalFrame     uint32
-	syncRemoteFrame    uint32
-	syncRemoteAckFrame uint32
+	audio *AudioBridge
+
+	syncLocalFrame      uint32
+	syncRemoteFrame     uint32
+	syncRemoteAckFrame  uint32
+	syncLastRemoteFrame uint32
 
 	sendFS *ModFS
 	recvFS *ModFS
@@ -39,9 +42,10 @@ func NewBridge() *Bridge {
 		Connected: false,
 		Running:   false,
 
-		syncLocalFrame:     1,
-		syncRemoteFrame:    0,
-		syncRemoteAckFrame: 0,
+		syncLocalFrame:      1,
+		syncRemoteFrame:     0,
+		syncRemoteAckFrame:  0,
+		syncLastRemoteFrame: 0,
 
 		sendFS: send_modfs,
 		recvFS: recv_modfs,
@@ -82,7 +86,10 @@ func (b *Bridge) poll() bool {
 	b.syncRemoteAckFrame, _ = syncFile.ReadUint32()
 
 	ackFrameValid := b.syncRemoteAckFrame <= b.syncLocalFrame
-	ackFrameThreshold := b.syncLocalFrame-b.syncRemoteAckFrame < 3
+	ackFrameThreshold := b.syncLocalFrame-b.syncRemoteAckFrame < 6
+
+	b.syncLocalFrame++
+	b.syncLastRemoteFrame = lastRemoteFrame
 
 	if b.syncRemoteFrame > lastRemoteFrame {
 		// active means coop is running and acknowledging us
@@ -105,7 +112,7 @@ func (b *Bridge) recv() {
 }
 
 func (b *Bridge) send() {
-
+	b.audio.send()
 }
 
 func (b *Bridge) update() {
@@ -113,8 +120,6 @@ func (b *Bridge) update() {
 		b.recv()
 		b.send()
 	}
-
-	b.syncLocalFrame++
 
 	syncFile := b.sendFS.Create("sync")
 	syncFile.WriteUint32(b.syncLocalFrame)
@@ -130,6 +135,9 @@ func (b *Bridge) Run() {
 
 	b.Running = true
 
+	b.audio = NewAudioBridge(b)
+	b.audio.Run()
+
 	for b.Running {
 		b.update()
 		interval := POLL_INTERVAL * time.Millisecond
@@ -144,6 +152,8 @@ func (b *Bridge) Stop() {
 	if !b.Running {
 		return
 	}
+
+	b.audio = nil
 
 	b.Running = false
 }

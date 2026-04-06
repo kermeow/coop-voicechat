@@ -15,9 +15,10 @@ do -- bridge_init
     gVoiceBridge.sendFS:clear()
 
     gVoiceBridge.syncFile = gVoiceBridge.sendFS:create_file("sync", false)
-    gVoiceBridge.syncLocalFrame = 0
+    gVoiceBridge.syncLocalFrame = 1
     gVoiceBridge.syncRemoteFrame = 0
     gVoiceBridge.syncRemoteAckFrame = 0
+    gVoiceBridge.syncLastRemoteFrame = 0
 end
 
 local function bridge_connect()
@@ -48,8 +49,12 @@ local function bridge_poll()
     gVoiceBridge.syncRemoteFrame = syncFile:read_integer(INT_TYPE_U32)
     gVoiceBridge.syncRemoteAckFrame = syncFile:read_integer(INT_TYPE_U32)
 
-    local ackFrameValid = gVoiceBridge.syncRemoteAckFrame > 0 and gVoiceBridge.syncRemoteAckFrame <= gVoiceBridge.syncLocalFrame
-    local ackFrameThreshold = gVoiceBridge.syncLocalFrame - gVoiceBridge.syncRemoteAckFrame < 3
+    local ackFrameValid = gVoiceBridge.syncRemoteAckFrame > 0 and
+        gVoiceBridge.syncRemoteAckFrame <= gVoiceBridge.syncLocalFrame
+    local ackFrameThreshold = gVoiceBridge.syncLocalFrame - gVoiceBridge.syncRemoteAckFrame < 6
+
+    gVoiceBridge.syncLocalFrame = get_global_timer()
+    gVoiceBridge.syncLastRemoteFrame = lastRemoteFrame
 
     if gVoiceBridge.syncRemoteFrame > lastRemoteFrame then
         -- active means the client is running and acknowledging us
@@ -69,6 +74,7 @@ end
 
 -- handles new data
 local function bridge_recv()
+    audio_recv()
 end
 
 -- sends new data
@@ -80,8 +86,6 @@ local function bridge_update()
         bridge_recv()
         bridge_send()
     end
-
-    gVoiceBridge.syncLocalFrame = get_global_timer()
 
     gVoiceBridge.syncFile:rewind()
     gVoiceBridge.syncFile:write_integer(gVoiceBridge.syncLocalFrame, INT_TYPE_U32)

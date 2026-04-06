@@ -26,7 +26,7 @@ type (
 	D = layout.Dimensions
 )
 
-func New(bridge *coop.Bridge) *UI {
+func New() *UI {
 	width := unit.Dp(360)
 	height := unit.Dp(96)
 
@@ -50,11 +50,14 @@ func New(bridge *coop.Bridge) *UI {
 	return &UI{
 		Window: window,
 		theme:  &theme,
-		bridge: bridge,
 	}
 }
 
 func (ui *UI) Run() error {
+	ui.bridge = coop.NewBridge()
+	go ui.bridge.Run()
+	defer ui.bridge.Stop()
+
 	var ops op.Ops
 	for {
 		switch e := ui.Event().(type) {

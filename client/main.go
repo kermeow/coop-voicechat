@@ -8,7 +8,6 @@ import (
 
 	"gioui.org/app"
 	"github.com/gordonklaus/portaudio"
-	// "gopkg.in/hraban/opus.v2"
 )
 
 func main() {
@@ -20,10 +19,7 @@ func main() {
 
 	coop.EnsureDirs()
 
-	bridge := coop.NewBridge()
-	ui := ui.New(bridge)
-
-	go bridge.Run()
+	ui := ui.New()
 
 	go func() {
 		if err := ui.Run(); err != nil {
