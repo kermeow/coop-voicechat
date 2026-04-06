@@ -113,7 +113,7 @@ func (b *Bridge) poll() bool {
 
 	if lastActive && !(ackFrameValid && ackFrameThreshold) {
 		b.syncTimeoutCounter++
-		if b.syncTimeoutCounter > 2 {
+		if b.syncTimeoutCounter > 6 {
 			b.disconnect()
 		}
 	}

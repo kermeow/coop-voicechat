@@ -82,7 +82,7 @@ local function bridge_poll()
 
     if lastActive and not (ackFrameValid and ackFrameThreshold) then
         gVoiceBridge.syncTimeoutCounter = gVoiceBridge.syncTimeoutCounter + 1
-        if gVoiceBridge.syncTimeoutCounter > 2 then
+        if gVoiceBridge.syncTimeoutCounter > 6 then
             log_to_console(
                 string.format("Bridge disconnected - av:%s aft:%s slf:%d srf:%d sraf:%d stc:%d", ackFrameValid,
                     ackFrameThreshold,
