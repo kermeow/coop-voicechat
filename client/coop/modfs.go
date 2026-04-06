@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"io"
+	"math"
 	"os"
 	"path"
 )
@@ -144,7 +145,7 @@ type ModFSFile struct {
 	Cursor int
 }
 
-// unused modfs rw functions: uint8, uint64, int8, int16, int32, int64, string, line
+// unused modfs rw functions: uint64, int8, int16, int32, int64, string, line
 
 func (f *ModFSFile) ReadBytes(l int) ([]byte, error) {
 	if f.Cursor+l > len(f.Data) {
@@ -153,6 +154,14 @@ func (f *ModFSFile) ReadBytes(l int) ([]byte, error) {
 	data := f.Data[f.Cursor : f.Cursor+l]
 	f.Cursor += l
 	return data, nil
+}
+
+func (f *ModFSFile) ReadUint8() (uint8, error) {
+	data, err := f.ReadBytes(1)
+	if err != nil {
+		return 0, err
+	}
+	return data[0], nil
 }
 
 func (f *ModFSFile) ReadUint16() (uint16, error) {
@@ -171,6 +180,30 @@ func (f *ModFSFile) ReadUint32() (uint32, error) {
 	return bin.Uint32(data), nil
 }
 
+func (f *ModFSFile) ReadUint64() (uint64, error) {
+	data, err := f.ReadBytes(8)
+	if err != nil {
+		return 0, err
+	}
+	return bin.Uint64(data), nil
+}
+
+func (f *ModFSFile) ReadFloat32() (float32, error) {
+	u, err := f.ReadUint32()
+	if err != nil {
+		return 0, err
+	}
+	return math.Float32frombits(u), nil
+}
+
+func (f *ModFSFile) ReadFloat64() (float64, error) {
+	u, err := f.ReadUint64()
+	if err != nil {
+		return 0, err
+	}
+	return math.Float64frombits(u), nil
+}
+
 func (f *ModFSFile) WriteBytes(d []byte) error {
 	l := len(d)
 	data := make([]byte, max(len(f.Data), f.Cursor+l))
@@ -179,6 +212,12 @@ func (f *ModFSFile) WriteBytes(d []byte) error {
 	f.Data = data
 	f.Cursor += l
 	return nil
+}
+
+func (f *ModFSFile) WriteUint8(n uint8) error {
+	data := make([]byte, 1)
+	data[0] = n
+	return f.WriteBytes(data)
 }
 
 func (f *ModFSFile) WriteUint16(n uint16) error {
@@ -191,4 +230,18 @@ func (f *ModFSFile) WriteUint32(n uint32) error {
 	data := make([]byte, 4)
 	bin.PutUint32(data, n)
 	return f.WriteBytes(data)
+}
+
+func (f *ModFSFile) WriteUint64(n uint64) error {
+	data := make([]byte, 8)
+	bin.PutUint64(data, n)
+	return f.WriteBytes(data)
+}
+
+func (f *ModFSFile) WriteFloat32(n float32) error {
+	return f.WriteUint32(math.Float32bits(n))
+}
+
+func (f *ModFSFile) WriteFloat64(n float64) error {
+	return f.WriteUint64(math.Float64bits(n))
 }
