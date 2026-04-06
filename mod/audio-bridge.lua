@@ -29,7 +29,6 @@ function audio_recv()
                 string.pack(PACKET_HEADER_FMT, network_global_index_from_local(0), gVoiceBridge.syncLocalFrame, order) ..
                 data
             network_send_bytestring(false, raw)
-            on_bytestring_receive(raw)
             frames = frames + 1
             order = order + 1
         end
