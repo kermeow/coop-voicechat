@@ -1,6 +1,6 @@
 local MAGIC_NUMBER = "smvc"
 
-local PACKET_HEADER_FMT = "!1< B I4 B"
+local PACKET_HEADER_FMT = "!1<BI4B"
 
 do
     gVoiceStates = {}
@@ -31,6 +31,7 @@ function audio_recv()
                 string.pack(PACKET_HEADER_FMT, network_global_index_from_local(0), gVoiceBridge.syncLocalFrame, order) ..
                 data
             network_send_bytestring(false, raw)
+            -- on_bytestring_receive(raw)
             frames = frames + 1
             order = order + 1
         end
@@ -68,7 +69,7 @@ function audio_send()
 end
 
 -- why bytestring no network index? :(
-local function on_bytestring_receive(raw)
+function on_bytestring_receive(raw)
     if not gVoiceBridge.connected then
         return
     end
@@ -76,7 +77,7 @@ local function on_bytestring_receive(raw)
     local packet = string.match(raw, "^" .. MAGIC_NUMBER .. "(.*)")
     if packet then
         local globalIndex, frame, order = string.unpack(PACKET_HEADER_FMT, packet)
-        local data = string.sub(packet, 6)
+        local data = string.sub(packet, 7)
         local localIndex = network_local_index_from_global(globalIndex)
 
         local voiceState = gVoiceStates[localIndex]
