@@ -79,6 +79,7 @@ end
 
 -- sends new data
 local function bridge_send()
+    audio_send()
 end
 
 local function bridge_update()

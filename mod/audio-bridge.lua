@@ -8,6 +8,7 @@ do
         gVoiceStates[i] = {
             volume = 1,
             speakVol = 1,
+            frames = {}
         }
     end
 end
@@ -17,6 +18,7 @@ function audio_recv()
     if not recording then
         return
     end
+    recording:rewind()
 
     local frames = 0
     local order = 0
@@ -36,7 +38,26 @@ function audio_recv()
 end
 
 function audio_send()
+    local states = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "states", false)
+    states:rewind()
 
+    for i = 1, MAX_PLAYERS - 1 do
+        local voiceState = gVoiceStates[i]
+        if gNetworkPlayers[i].connected then
+            states:write_integer(i, INT_TYPE_U8)
+            local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, tostring(i), false)
+
+            -- todo: sort the frames just in case :p
+            for _, frame in voiceState.frames do
+                if frame.syncFrame == 0 then
+                    frame.syncFrame = gVoiceBridge.syncLocalFrame
+                end
+                sendFile:write_integer(frame.syncFrame, INT_TYPE_U32)
+                sendFile:write_integer(string.len(frame.data), INT_TYPE_U32)
+                sendFile:write_bytes(frame.data)
+            end
+        end
+    end
 end
 
 -- why bytestring no network index? :(
@@ -50,6 +71,14 @@ local function on_bytestring_receive(raw)
         local globalIndex, frame, order = string.unpack(PACKET_HEADER_FMT, packet)
         local data = string.sub(packet, 6)
         local localIndex = network_local_index_from_global(globalIndex)
+
+        local voiceState = gVoiceStates[localIndex]
+        table.insert(voiceState.frames, {
+            syncFrame = 0,
+            frame = frame,
+            order = order,
+            data = data
+        })
     end
 end
 
