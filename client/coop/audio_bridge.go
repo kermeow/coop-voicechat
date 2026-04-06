@@ -52,6 +52,7 @@ func (s *speaker) processAudio(out [][]float32) {
 	if len(s.pcmBuf) < FRAMES_PER_BUFFER {
 		return
 	}
+	
 	var ms float64 = 0
 	for i := range FRAMES_PER_BUFFER {
 		pcm := s.pcmBuf[i]
@@ -115,7 +116,7 @@ func (b *AudioBridge) recv() {
 		if disconnected > 0 {
 			if speaker != nil {
 				speaker.Abort()
-				b.speakers[i] = nil
+				delete(b.speakers, i)
 				log.Println("Speaker", i, "removed")
 			}
 			continue

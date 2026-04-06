@@ -68,8 +68,8 @@ function audio_send()
             states:write_integer(#fileName, INT_TYPE_U8)
             states:write_bytes(fileName)
 
-            local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, fileName, false)
-            sendFile:rewind()
+            gVoiceBridge.sendFS:delete_file(fileName)
+            local sendFile = gVoiceBridge.sendFS:create_file(fileName, false)
 
             -- todo: sort the frames just in case :p
             for i = #voiceState.frames, 1, -1 do
