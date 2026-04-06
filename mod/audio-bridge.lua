@@ -46,6 +46,7 @@ function audio_send()
         if gNetworkPlayers[i].connected then
             states:write_integer(i, INT_TYPE_U8)
             local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, tostring(i), false)
+            sendFile:rewind()
 
             -- todo: sort the frames just in case :p
             for i = #voiceState.frames, 1, -1 do

@@ -108,7 +108,7 @@ func (b *Bridge) poll() bool {
 }
 
 func (b *Bridge) recv() {
-
+	b.audio.recv()
 }
 
 func (b *Bridge) send() {
