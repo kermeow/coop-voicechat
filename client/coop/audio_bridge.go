@@ -1,7 +1,6 @@
 package coop
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/gordonklaus/portaudio"
@@ -32,18 +31,19 @@ type speaker struct {
 func newSpeaker() *speaker {
 	s := &speaker{}
 	s.Stream, _ = portaudio.OpenDefaultStream(0, 1, SAMPLE_RATE, FRAMES_PER_BUFFER, s.processAudio)
-	s.pcmBuf = make([]float32, FRAMES_PER_BUFFER)
+	s.pcmBuf = make([]float32, 0)
 	s.decoder, _ = opus.NewDecoder(SAMPLE_RATE, CHANNELS)
 	return s
 }
 
 func (s *speaker) processAudio(out [][]float32) {
-	// if len(s.pcmBuf) < FRAMES_PER_BUFFER {
-	// 	return
-	// }
+	if len(s.pcmBuf) < FRAMES_PER_BUFFER {
+		return
+	}
 	for i := range FRAMES_PER_BUFFER {
 		out[0][i] = s.pcmBuf[i]
 	}
+	s.pcmBuf = s.pcmBuf[FRAMES_PER_BUFFER:]
 }
 
 type AudioBridge struct {
@@ -101,25 +101,15 @@ func (b *AudioBridge) recv() {
 			continue
 		}
 		for inFile.Cursor < len(inFile.Data) {
-			syncFrame, err := inFile.ReadUint32()
-			if err != nil {
-				break
-			}
-			dataLen, err := inFile.ReadUint32()
-			if err != nil {
-				break
-			}
-			data, err := inFile.ReadBytes(int(dataLen))
-			if err != nil {
-				break
-			}
+			syncFrame, _ := inFile.ReadUint32()
+			dataLen, _ := inFile.ReadUint32()
+			data, _ := inFile.ReadBytes(int(dataLen))
 			if syncFrame <= b.bridge.syncLastRemoteFrame {
 				continue
 			}
 			pcmBuf := make([]float32, FRAMES_PER_BUFFER)
 			n, _ := speaker.decoder.DecodeFloat32(data, pcmBuf)
-			copy(speaker.pcmBuf, pcmBuf[:n])
-			log.Println("decoded", n, "samples")
+			speaker.pcmBuf = append(speaker.pcmBuf, pcmBuf[:n]...)
 		}
 	}
 }
