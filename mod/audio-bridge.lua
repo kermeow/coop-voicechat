@@ -48,6 +48,12 @@ function audio_send()
             local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, tostring(i), false)
 
             -- todo: sort the frames just in case :p
+            for i = #voiceState.frames, 1, -1 do
+                local frame = voiceState.frames[i]
+                if frame.syncFrame <= gVoiceBridge.syncRemoteAckFrame then
+                    table.remove(voiceState.frames, i)
+                end
+            end
             for _, frame in pairs(voiceState.frames) do
                 if frame.syncFrame == 0 then
                     frame.syncFrame = gVoiceBridge.syncLocalFrame
