@@ -7,7 +7,7 @@ do
     for i = 0, MAX_PLAYERS - 1 do
         gVoiceStates[i] = {
             volume = 1,
-            speakVol = 1,
+            speakVol = -1,
             frames = {}
         }
     end
@@ -52,9 +52,9 @@ function audio_recv()
     for i, voiceState in pairs(gVoiceStates) do
         local volume = newVolumes[i]
         if not volume then
-            volume = (math.sin(get_global_timer() * 0.1 + i * 0.3) + 1) / 2
+            volume = -1
         else
-            volume = math.sqrt(volume)
+            volume = math.min(1, math.sqrt(volume) * 2)
         end
         voiceState.speakVol = volume
     end
