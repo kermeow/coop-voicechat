@@ -50,8 +50,13 @@ function audio_recv()
         newVolumes[i] = rms
     end
     for i, voiceState in pairs(gVoiceStates) do
-        -- local fallback = (math.sin(math.rad(get_global_timer() + i)) + 1) / 2
-        voiceState.speakVol = newVolumes[i] or 0 -- or fallback
+        local volume = newVolumes[i]
+        if not volume then
+            volume = (math.sin(get_global_timer() * 0.1 + i * 0.3) + 1) / 2
+        else
+            volume = math.sqrt(volume)
+        end
+        voiceState.speakVol = volume
     end
 end
 
@@ -94,7 +99,7 @@ function audio_send()
 end
 
 -- why bytestring no network index? :(
-function on_bytestring_receive(raw)
+local function on_bytestring_receive(raw)
     if not gVoiceBridge.connected then
         return
     end

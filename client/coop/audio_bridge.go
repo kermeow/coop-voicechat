@@ -52,14 +52,14 @@ func (s *speaker) processAudio(out [][]float32) {
 	if len(s.pcmBuf) < FRAMES_PER_BUFFER {
 		return
 	}
-	
+
 	var ms float64 = 0
 	for i := range FRAMES_PER_BUFFER {
 		pcm := s.pcmBuf[i]
 		ms += math.Pow(float64(pcm), 2)
 		out[0][i] = pcm * s.volume
 	}
-	s.rms = float32(math.Sqrt(ms))
+	s.rms = float32(math.Sqrt(ms / float64(FRAMES_PER_BUFFER)))
 	s.pcmBuf = s.pcmBuf[FRAMES_PER_BUFFER:]
 }
 
@@ -70,7 +70,7 @@ type AudioBridge struct {
 
 	inFrames []*opusFrame
 	inStream *portaudio.Stream
-	inBuf    []int16
+	inBuf    []float32
 	inRms    float32
 	encBuf   []byte
 
@@ -78,7 +78,7 @@ type AudioBridge struct {
 }
 
 func NewAudioBridge(bridge *Bridge) *AudioBridge {
-	inBuf := make([]int16, FRAMES_PER_BUFFER)
+	inBuf := make([]float32, FRAMES_PER_BUFFER)
 	inStream, _ := portaudio.OpenDefaultStream(1, 0, SAMPLE_RATE, FRAMES_PER_BUFFER, inBuf)
 	encoder, _ := opus.NewEncoder(SAMPLE_RATE, CHANNELS, opus.AppVoIP)
 	encoder.SetBitrate(OPUS_BITRATE)
@@ -148,6 +148,10 @@ func (b *AudioBridge) recv() {
 			}
 			pcmBuf := make([]float32, FRAMES_PER_BUFFER)
 			n, _ := speaker.decoder.DecodeFloat32(data, pcmBuf)
+			for i, pcm := range pcmBuf {
+				// soft clip
+				pcmBuf[i] = float32(math.Tanh(float64(pcm)))
+			}
 			speaker.pcmBuf = append(speaker.pcmBuf, pcmBuf[:n]...)
 		}
 	}
@@ -181,6 +185,8 @@ func (b *AudioBridge) send() {
 	}
 
 	volumes := b.bridge.sendFS.Create("volumes")
+	volumes.WriteUint8(0)
+	volumes.WriteFloat32(b.inRms)
 	for i, speaker := range b.speakers {
 		volumes.WriteUint8(i)
 		volumes.WriteFloat32(speaker.rms)
@@ -201,8 +207,14 @@ func (b *AudioBridge) inputLoop() error {
 			continue
 		}
 
+		var ms float64 = 0
+		for _, pcm := range b.inBuf {
+			ms += math.Pow(float64(pcm), 2)
+		}
+		b.inRms = float32(math.Sqrt(ms / float64(FRAMES_PER_BUFFER)))
+
 		i := max(0, len(b.inFrames)-MAX_OPUS_FRAMES)
-		n, err := b.encoder.Encode(b.inBuf, b.encBuf)
+		n, err := b.encoder.EncodeFloat32(b.inBuf, b.encBuf)
 		frame := &opusFrame{
 			syncFrame: 0,
 			data:      make([]byte, n),
