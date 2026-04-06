@@ -38,8 +38,8 @@ function audio_recv()
 end
 
 function audio_send()
-    local states = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "states", false)
-    states:rewind()
+    gVoiceBridge.sendFS:delete_file("states")
+    local states = gVoiceBridge.sendFS:create_file("states", false)
 
     for i = 1, MAX_PLAYERS - 1 do
         local voiceState = gVoiceStates[i]
@@ -50,7 +50,7 @@ function audio_send()
             -- todo: sort the frames just in case :p
             for i = #voiceState.frames, 1, -1 do
                 local frame = voiceState.frames[i]
-                if frame.syncFrame <= gVoiceBridge.syncRemoteAckFrame then
+                if frame.syncFrame > 0 and frame.syncFrame <= gVoiceBridge.syncRemoteAckFrame then
                     table.remove(voiceState.frames, i)
                 end
             end
