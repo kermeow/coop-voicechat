@@ -26,17 +26,23 @@ type opusFrame struct {
 type speaker struct {
 	*portaudio.Stream
 
-	volume   float32
-	fileName string
+	state *voiceState
 
 	pcmBuf  []float32
 	rms     float32
 	decoder *opus.Decoder
 }
 
+type voiceState struct {
+	volume   float32
+	fileName string
+}
+
 func newSpeaker() *speaker {
 	s := &speaker{
-		volume: 0,
+		state: &voiceState{
+			volume: 0,
+		},
 
 		pcmBuf: make([]float32, 0),
 		rms:    0,
@@ -57,7 +63,7 @@ func (s *speaker) processAudio(out [][]float32) {
 	for i := range FRAMES_PER_BUFFER {
 		pcm := s.pcmBuf[i]
 		ms += math.Pow(float64(pcm), 2)
-		out[0][i] = pcm * s.volume
+		out[0][i] = pcm * s.state.volume
 	}
 	s.rms = float32(math.Sqrt(ms / float64(FRAMES_PER_BUFFER)))
 	s.pcmBuf = s.pcmBuf[FRAMES_PER_BUFFER:]
@@ -66,7 +72,8 @@ func (s *speaker) processAudio(out [][]float32) {
 type AudioBridge struct {
 	bridge *Bridge
 
-	speakers map[uint8]*speaker
+	localState *voiceState
+	speakers   map[uint8]*speaker
 
 	inFrames []*opusFrame
 	inStream *portaudio.Stream
@@ -85,6 +92,9 @@ func NewAudioBridge(bridge *Bridge) *AudioBridge {
 	return &AudioBridge{
 		bridge: bridge,
 
+		localState: &voiceState{
+			volume: 1,
+		},
 		speakers: make(map[uint8]*speaker),
 
 		inFrames: make([]*opusFrame, 0),
@@ -127,15 +137,24 @@ func (b *AudioBridge) recv() {
 			log.Println("Speaker", i, "added")
 		}
 
-		speaker.volume, _ = states.ReadFloat32()
+		speaker.state.volume, _ = states.ReadFloat32()
 
 		fileNameLen, _ := states.ReadUint8()
 		fileNameBytes, _ := states.ReadBytes(int(fileNameLen))
-		speaker.fileName = string(fileNameBytes)
+		speaker.state.fileName = string(fileNameBytes)
+	}
+
+	{
+		localFile, err := b.bridge.recvFS.Get("local")
+		if err != nil {
+			return
+		}
+
+		b.localState.volume, _ = localFile.ReadFloat32()
 	}
 
 	for _, speaker := range b.speakers {
-		inFile, err := b.bridge.recvFS.Get(speaker.fileName)
+		inFile, err := b.bridge.recvFS.Get(speaker.state.fileName)
 		if err != nil {
 			continue
 		}
@@ -207,14 +226,17 @@ func (b *AudioBridge) inputLoop() error {
 			continue
 		}
 
+		pcmBuf := make([]float32, FRAMES_PER_BUFFER)
+
 		var ms float64 = 0
-		for _, pcm := range b.inBuf {
+		for i, pcm := range b.inBuf {
 			ms += math.Pow(float64(pcm), 2)
+			pcmBuf[i] = pcm * b.localState.volume
 		}
 		b.inRms = float32(math.Sqrt(ms / float64(FRAMES_PER_BUFFER)))
 
 		i := max(0, len(b.inFrames)-MAX_OPUS_FRAMES)
-		n, err := b.encoder.EncodeFloat32(b.inBuf, b.encBuf)
+		n, err := b.encoder.EncodeFloat32(pcmBuf, b.encBuf)
 		frame := &opusFrame{
 			syncFrame: 0,
 			data:      make([]byte, n),

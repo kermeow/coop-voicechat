@@ -64,6 +64,11 @@ function audio_send()
     gVoiceBridge.sendFS:delete_file("states")
     local states = gVoiceBridge.sendFS:create_file("states", false)
 
+    gVoiceBridge.sendFS:delete_file("local")
+    local localFile = gVoiceBridge.sendFS:create_file("local", false)
+    local localState = gVoiceStates[0]
+    localFile:write_number(localState.volume, FLOAT_TYPE_F32)
+
     for i = 1, MAX_PLAYERS - 1 do
         local voiceState = gVoiceStates[i]
         local fileName = string.format("voice-%d", i)
