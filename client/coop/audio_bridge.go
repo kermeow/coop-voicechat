@@ -8,10 +8,10 @@ import (
 	"gopkg.in/hraban/opus.v2"
 )
 
-const SAMPLE_RATE = 24000 // opus is really annoying about this :(
+const SAMPLE_RATE = 48000 // opus is really annoying about this :(
 const CHANNELS = 1        // mono
 
-const OPUS_BITRATE = 32000      // 32 kbps
+const OPUS_BITRATE = 64000      // 64 kbps
 const OPUS_FRAME_SIZE_MS = 0.02 // 20 ms frames, we can go smaller but i dont want to
 
 const MAX_OPUS_FRAMES = 10                  // 200 ms backlog
