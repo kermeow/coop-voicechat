@@ -4,6 +4,7 @@ import (
 	"coop-voicechat/coop"
 	"coop-voicechat/fonts"
 	"image/color"
+	"log"
 
 	"gioui.org/app"
 	"gioui.org/layout"
@@ -54,6 +55,8 @@ func New() *UI {
 }
 
 func (ui *UI) Run() error {
+	log.Println("UI running")
+
 	ui.bridge = coop.NewBridge()
 	go ui.bridge.Run()
 	defer ui.bridge.Stop()
@@ -66,21 +69,6 @@ func (ui *UI) Run() error {
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
 			paint.Fill(gtx.Ops, ui.theme.Bg)
-
-			statusText := "Inactive"
-			if ui.bridge.Connected {
-				statusText = "Active"
-			}
-
-			layout.UniformInset(unit.Dp(16)).Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceAround}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceSides}.Layout(gtx,
-							layout.Rigid(material.Label(ui.theme, unit.Sp(16), statusText).Layout),
-						)
-					}),
-				)
-			})
 
 			e.Frame(gtx.Ops)
 		}

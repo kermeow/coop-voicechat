@@ -1,7 +1,8 @@
 package coop
 
 import (
-	"strconv"
+	"log"
+	"math"
 
 	"github.com/gordonklaus/portaudio"
 	"gopkg.in/hraban/opus.v2"
@@ -24,15 +25,26 @@ type opusFrame struct {
 
 type speaker struct {
 	*portaudio.Stream
+
+	volume   float32
+	fileName string
+
 	pcmBuf  []float32
+	rms     float32
 	decoder *opus.Decoder
 }
 
 func newSpeaker() *speaker {
-	s := &speaker{}
+	s := &speaker{
+		volume: 0,
+
+		pcmBuf: make([]float32, 0),
+		rms:    0,
+	}
+
 	s.Stream, _ = portaudio.OpenDefaultStream(0, 1, SAMPLE_RATE, FRAMES_PER_BUFFER, s.processAudio)
-	s.pcmBuf = make([]float32, 0)
 	s.decoder, _ = opus.NewDecoder(SAMPLE_RATE, CHANNELS)
+
 	return s
 }
 
@@ -40,9 +52,13 @@ func (s *speaker) processAudio(out [][]float32) {
 	if len(s.pcmBuf) < FRAMES_PER_BUFFER {
 		return
 	}
+	var ms float64 = 0
 	for i := range FRAMES_PER_BUFFER {
-		out[0][i] = s.pcmBuf[i]
+		pcm := s.pcmBuf[i]
+		ms += math.Pow(float64(pcm), 2)
+		out[0][i] = pcm * s.volume
 	}
+	s.rms = float32(math.Sqrt(ms))
 	s.pcmBuf = s.pcmBuf[FRAMES_PER_BUFFER:]
 }
 
@@ -54,6 +70,7 @@ type AudioBridge struct {
 	inFrames []*opusFrame
 	inStream *portaudio.Stream
 	inBuf    []int16
+	inRms    float32
 	encBuf   []byte
 
 	encoder *opus.Encoder
@@ -72,6 +89,7 @@ func NewAudioBridge(bridge *Bridge) *AudioBridge {
 		inFrames: make([]*opusFrame, 0),
 		inStream: inStream,
 		inBuf:    inBuf,
+		inRms:    0,
 		encBuf:   make([]byte, 2048), // hungry hungry opus
 
 		encoder: encoder,
@@ -88,15 +106,35 @@ func (b *AudioBridge) recv() {
 		return
 	}
 
-	for _, v := range states.Data {
-		speaker := b.speakers[v]
-		if speaker == nil {
+	for states.Cursor < len(states.Data) {
+		rawi, _ := states.ReadUint8()
+		i, disconnected := rawi&0x7f, rawi&0x80
+
+		speaker := b.speakers[i]
+
+		if disconnected > 0 {
+			if speaker != nil {
+				speaker.Abort()
+				b.speakers[i] = nil
+				log.Println("Speaker", i, "removed")
+			}
+			continue
+		} else if speaker == nil {
 			speaker = newSpeaker()
-			b.speakers[v] = speaker
 			speaker.Start()
+			b.speakers[i] = speaker
+			log.Println("Speaker", i, "added")
 		}
 
-		inFile, err := b.bridge.recvFS.Get(strconv.Itoa(int(v)))
+		speaker.volume, _ = states.ReadFloat32()
+
+		fileNameLen, _ := states.ReadUint8()
+		fileNameBytes, _ := states.ReadBytes(int(fileNameLen))
+		speaker.fileName = string(fileNameBytes)
+	}
+
+	for _, speaker := range b.speakers {
+		inFile, err := b.bridge.recvFS.Get(speaker.fileName)
 		if err != nil {
 			continue
 		}
@@ -139,6 +177,12 @@ func (b *AudioBridge) send() {
 		recording.WriteUint32(v.syncFrame)
 		recording.WriteUint32(uint32(len(v.data)))
 		recording.WriteBytes(v.data)
+	}
+
+	volumes := b.bridge.sendFS.Create("volumes")
+	for i, speaker := range b.speakers {
+		volumes.WriteUint8(i)
+		volumes.WriteFloat32(speaker.rms)
 	}
 }
 

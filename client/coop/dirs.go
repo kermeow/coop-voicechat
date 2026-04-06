@@ -1,6 +1,7 @@
 package coop
 
 import (
+	"log"
 	"os"
 	"path"
 	"runtime"
@@ -12,7 +13,10 @@ func ensureDir(dir string) {
 		if err != nil {
 			panic(err)
 		}
+		log.Println("Made dir", dir)
+		return
 	}
+	log.Println("Dir exists", dir)
 }
 
 func findAppData() string {

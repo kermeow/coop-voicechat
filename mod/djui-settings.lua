@@ -25,7 +25,7 @@ local function render_user_volume_slider(index, x, y, width, height)
     local v = gVoiceStates[index]
 
     -- WIP var for user speaking volume being displayed
-    v.speakVol = (math.sin(get_global_timer()*0.1 + index*0.3)/math.pi) + 0.5
+    -- v.speakVol = (math.sin(get_global_timer()*0.1 + index*0.3)/math.pi) + 0.5
 
     local volumeScale = width*v.volume*0.5
 

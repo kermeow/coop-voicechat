@@ -133,6 +133,8 @@ func (b *Bridge) Run() {
 		return
 	}
 
+	log.Println("Bridge running")
+
 	b.Running = true
 
 	b.audio = NewAudioBridge(b)

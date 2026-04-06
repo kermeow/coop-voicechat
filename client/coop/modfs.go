@@ -145,7 +145,7 @@ type ModFSFile struct {
 	Cursor int
 }
 
-// unused modfs rw functions: uint64, int8, int16, int32, int64, string, line
+// unused modfs rw functions: int8, int16, int32, int64, string, line
 
 func (f *ModFSFile) ReadBytes(l int) ([]byte, error) {
 	if f.Cursor+l > len(f.Data) {

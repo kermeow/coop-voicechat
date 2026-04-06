@@ -36,6 +36,23 @@ function audio_recv()
             order = order + 1
         end
     end
+
+    local volumes = gVoiceBridge.recvFS:get_file("volumes")
+    if not volumes then
+        return
+    end
+    volumes:rewind()
+
+    local newVolumes = {}
+    while not volumes:is_eof() do
+        local i = volumes:read_integer(INT_TYPE_U8)
+        local rms = volumes:read_number(FLOAT_TYPE_F32)
+        newVolumes[i] = rms
+    end
+    for i, voiceState in pairs(gVoiceStates) do
+        -- local fallback = (math.sin(math.rad(get_global_timer() + i)) + 1) / 2
+        voiceState.speakVol = newVolumes[i] or 0 -- or fallback
+    end
 end
 
 function audio_send()
@@ -44,9 +61,14 @@ function audio_send()
 
     for i = 1, MAX_PLAYERS - 1 do
         local voiceState = gVoiceStates[i]
+        local fileName = string.format("voice-%d", i)
         if gNetworkPlayers[i].connected then
             states:write_integer(i, INT_TYPE_U8)
-            local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, tostring(i), false)
+            states:write_number(voiceState.volume, FLOAT_TYPE_F32)
+            states:write_integer(#fileName, INT_TYPE_U8)
+            states:write_bytes(fileName)
+
+            local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, fileName, false)
             sendFile:rewind()
 
             -- todo: sort the frames just in case :p
@@ -56,6 +78,7 @@ function audio_send()
                     table.remove(voiceState.frames, i)
                 end
             end
+
             for _, frame in pairs(voiceState.frames) do
                 if frame.syncFrame == 0 then
                     frame.syncFrame = gVoiceBridge.syncLocalFrame
@@ -64,6 +87,8 @@ function audio_send()
                 sendFile:write_integer(string.len(frame.data), INT_TYPE_U32)
                 sendFile:write_bytes(frame.data)
             end
+        else
+            states:write_integer(i | 0x80, INT_TYPE_U8)
         end
     end
 end
