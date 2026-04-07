@@ -200,6 +200,10 @@ func (b *audioBridge) recv() {
 		distance := difference.Magnitude()
 		speaker.state.attenuation = min(1, 1/float32(distance/256))
 
+		if speaker.state.level != b.localState.level {
+			speaker.state.attenuation = 0
+		}
+
 		direction := difference.Unit()
 		pan := direction.Dot(b.localRight)
 		angle := (pan + 1) * (math.Pi / 4)
