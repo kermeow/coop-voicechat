@@ -43,6 +43,12 @@ func onReady() {
 	systray.SetTitle("coop-voicechat")
 	systray.SetTooltip("coop-voicechat client")
 
+	systray.SetOnClick(func(menu systray.IMenu) {
+		if menu != nil {
+			menu.ShowMenu()
+		}
+	})
+
 	mStatus := systray.AddMenuItem("Disconnected", "Current bridge status")
 	mStatus.Disable()
 	go func() {
@@ -55,6 +61,8 @@ func onReady() {
 			}
 		}
 	}()
+
+	systray.AddSeparator()
 
 	mQuit := systray.AddMenuItem("Quit", "Quit the coop-voicechat client")
 	mQuit.Click(systray.Quit)
