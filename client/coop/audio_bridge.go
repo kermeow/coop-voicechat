@@ -85,7 +85,7 @@ func (s *speaker) processAudio(out [][]float32) {
 	var ms float64 = 0
 	for i := range FRAMES_PER_BUFFER {
 		pcm := s.pcmBuf[i]
-		ms += math.Pow(float64(pcm), 2)
+		ms += float64(pcm * pcm)
 
 		pcm *= s.state.volume * s.state.attenuation
 
