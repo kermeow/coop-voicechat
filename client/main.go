@@ -9,9 +9,15 @@ import (
 	"github.com/postfinance/single"
 )
 
+var GitDescribe string = "unknown"
+var GitBranch string = "unknown"
+var GitCommit string = "unknown"
+
 var bridge *coop.Bridge
 
 func main() {
+	log.Printf("coop-voicechat %s (%s@%s)\n", GitDescribe, GitCommit, GitBranch)
+
 	one, err := single.New("coop-voicechat")
 	if err != nil {
 		log.Fatalln(err)
