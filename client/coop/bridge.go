@@ -10,11 +10,19 @@ const BRIDGE_VERSION uint16 = 1
 const POLL_INTERVAL = 33           // 1/30
 const POLL_INTERVAL_INACTIVE = 100 // 1/10
 
+type BridgeEvent int
+
+const (
+	BridgeConnect BridgeEvent = iota
+	BridgeDisconnect
+)
+
 type Bridge struct {
 	Connected bool
 	Running   bool
+	Event     chan BridgeEvent
 
-	audio *AudioBridge
+	audio *audioBridge
 
 	syncLocalFrame      uint32
 	syncRemoteFrame     uint32
@@ -42,6 +50,7 @@ func NewBridge() *Bridge {
 	return &Bridge{
 		Connected: false,
 		Running:   false,
+		Event:     make(chan BridgeEvent),
 
 		syncLocalFrame:      1,
 		syncRemoteFrame:     0,
@@ -54,11 +63,19 @@ func NewBridge() *Bridge {
 	}
 }
 
+func (b *Bridge) event(e BridgeEvent) {
+	select {
+	case b.Event <- e:
+	default:
+	}
+}
+
 func (b *Bridge) connect() {
 	if b.Connected {
 		return
 	}
 	b.Connected = true
+	b.event(BridgeConnect)
 
 	log.Println("Bridge connected")
 }
@@ -68,6 +85,7 @@ func (b *Bridge) disconnect() {
 		return
 	}
 	b.Connected = false
+	b.event(BridgeDisconnect)
 
 	log.Println("Bridge disconnected")
 }
@@ -152,7 +170,7 @@ func (b *Bridge) Run() {
 
 	b.Running = true
 
-	b.audio = NewAudioBridge(b)
+	b.audio = newAudioBridge(b)
 	b.audio.Run()
 
 	for b.Running {
@@ -170,7 +188,8 @@ func (b *Bridge) Stop() {
 		return
 	}
 
-	b.audio = nil
+	log.Println("Bridge stopping")
 
 	b.Running = false
+	b.audio = nil
 }

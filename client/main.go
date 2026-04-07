@@ -2,30 +2,60 @@ package main
 
 import (
 	"coop-voicechat/coop"
-	"coop-voicechat/ui"
 	"log"
-	"os"
 
-	"gioui.org/app"
+	"github.com/energye/systray"
 	"github.com/gordonklaus/portaudio"
+	"github.com/postfinance/single"
 )
 
+var bridge *coop.Bridge
+
 func main() {
-	err := portaudio.Initialize()
+	one, err := single.New("coop-voicechat")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if err := one.Lock(); err != nil {
+		log.Fatalln(err)
+	}
+	defer one.Unlock()
+
+	log.Println("Initialize PortAudio")
+	err = portaudio.Initialize()
 	if err != nil {
 		panic(err)
 	}
 	defer portaudio.Terminate()
 
+	log.Println("Checking sm64coopdx dirs")
 	coop.EnsureDirs()
 
-	ui := ui.New()
+	bridge = coop.NewBridge()
+	go bridge.Run()
+	defer bridge.Stop()
 
-	go func() {
-		if err := ui.Run(); err != nil {
-			log.Fatal(err)
-		}
-		os.Exit(0)
-	}()
-	app.Main()
+	systray.Run(onReady, onExit)
+	log.Println("Bye bye!")
 }
+
+func onReady() {
+	systray.SetTitle("coop-voicechat")
+	systray.SetTooltip("coop-voicechat client")
+
+	mStatus := systray.AddMenuItem("Disconnected", "Current bridge status")
+	mStatus.Disable()
+	go func() {
+		switch e := <-bridge.Event; e {
+		case coop.BridgeConnect:
+			mStatus.SetTitle("Connected")
+		case coop.BridgeDisconnect:
+			mStatus.SetTitle("Disconnected")
+		}
+	}()
+
+	mQuit := systray.AddMenuItem("Quit", "Quit the coop-voicechat client")
+	mQuit.Click(systray.Quit)
+}
+
+func onExit() {}

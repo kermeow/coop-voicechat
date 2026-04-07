@@ -96,7 +96,7 @@ func (s *speaker) processAudio(out [][]float32) {
 	s.pcmBuf = s.pcmBuf[FRAMES_PER_BUFFER:]
 }
 
-type AudioBridge struct {
+type audioBridge struct {
 	bridge *Bridge
 
 	localState   *voiceState
@@ -113,12 +113,12 @@ type AudioBridge struct {
 	encoder *opus.Encoder
 }
 
-func NewAudioBridge(bridge *Bridge) *AudioBridge {
+func newAudioBridge(bridge *Bridge) *audioBridge {
 	inBuf := make([]float32, FRAMES_PER_BUFFER)
 	inStream, _ := portaudio.OpenDefaultStream(1, 0, SAMPLE_RATE, FRAMES_PER_BUFFER, inBuf)
 	encoder, _ := opus.NewEncoder(SAMPLE_RATE, CHANNELS, opus.AppVoIP)
 	encoder.SetBitrate(OPUS_BITRATE)
-	return &AudioBridge{
+	return &audioBridge{
 		bridge: bridge,
 
 		localState: &voiceState{
@@ -136,11 +136,11 @@ func NewAudioBridge(bridge *Bridge) *AudioBridge {
 	}
 }
 
-func (b *AudioBridge) Run() {
+func (b *audioBridge) Run() {
 	go b.inputLoop()
 }
 
-func (b *AudioBridge) recv() {
+func (b *audioBridge) recv() {
 	states, err := b.bridge.recvFS.Get("states")
 	if err != nil {
 		return
@@ -228,7 +228,7 @@ func (b *AudioBridge) recv() {
 	}
 }
 
-func (b *AudioBridge) send() {
+func (b *audioBridge) send() {
 	n := 0
 	j := 0
 	for i := len(b.inFrames); i > 0; i-- {
@@ -264,7 +264,7 @@ func (b *AudioBridge) send() {
 	}
 }
 
-func (b *AudioBridge) inputLoop() error {
+func (b *audioBridge) inputLoop() error {
 	b.inStream.Start()
 	defer b.inStream.Abort()
 
