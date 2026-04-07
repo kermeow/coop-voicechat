@@ -14,4 +14,4 @@ require github.com/godbus/dbus/v5 v5.1.0 // indirect
 
 replace github.com/gordonklaus/portaudio => github.com/KarpelesLab/static-portaudio v0.6.190600
 
-replace github.com/hraban/opus => github.com/KarpelesLab/static-opus v0.9.152
+replace github.com/hraban/opus => github.com/kermeow/static-opus v0.0.0

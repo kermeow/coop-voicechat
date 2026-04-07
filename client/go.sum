@@ -1,5 +1,3 @@
-github.com/KarpelesLab/static-opus v0.9.152 h1:5Ii0fnHxSqsrEJFYNnyDcIE2pFZNxT3CtV72uT1WDNM=
-github.com/KarpelesLab/static-opus v0.9.152/go.mod h1:L2YOykRagyAmgiBTXpdsKhZxhx1wLkWzgen2y0t2ApE=
 github.com/KarpelesLab/static-portaudio v0.6.190600 h1:tsflLJBFktrcjZhB0LuATgvx6v8ZgO7KdnC+gslzZus=
 github.com/KarpelesLab/static-portaudio v0.6.190600/go.mod h1:NjhxVMSjVFaeEJxAbJesGNTKp2nIDqwF3nuGXWG3WMw=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
@@ -8,6 +6,8 @@ github.com/energye/systray v1.0.3 h1:XnyjJCeRU5z00bpNOic2fGTKz/7yHZMZjWiGIVXDS+4
 github.com/energye/systray v1.0.3/go.mod h1:HelKhC3PXwv3ryDxbuQqV+7kAxAYNzE5cfdrerGOZTc=
 github.com/godbus/dbus/v5 v5.1.0 h1:4KLkAxT3aOY8Li4FRJe/KvhoNFFxo0m6fNuFUO8QJUk=
 github.com/godbus/dbus/v5 v5.1.0/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
+github.com/kermeow/static-opus v0.0.0 h1:Jgxyt+y/go2oyqqoMuUOzSSyJaWe8TMrYssRN3ApwwQ=
+github.com/kermeow/static-opus v0.0.0/go.mod h1:L2YOykRagyAmgiBTXpdsKhZxhx1wLkWzgen2y0t2ApE=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/postfinance/single v0.0.2 h1:YLjLxxeGDnsW93oK4CxxOFSVOOiBi1OyoK4ZTl5biJw=
