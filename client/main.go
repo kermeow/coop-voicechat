@@ -46,11 +46,13 @@ func onReady() {
 	mStatus := systray.AddMenuItem("Disconnected", "Current bridge status")
 	mStatus.Disable()
 	go func() {
-		switch e := <-bridge.Event; e {
-		case coop.BridgeConnect:
-			mStatus.SetTitle("Connected")
-		case coop.BridgeDisconnect:
-			mStatus.SetTitle("Disconnected")
+		for bridge.Running {
+			switch e := <-bridge.Event; e {
+			case coop.BridgeConnect:
+				mStatus.SetTitle("Connected")
+			case coop.BridgeDisconnect:
+				mStatus.SetTitle("Disconnected")
+			}
 		}
 	}()
 
