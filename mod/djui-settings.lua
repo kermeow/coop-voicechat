@@ -21,7 +21,7 @@ end
 local FONT_USER = djui_menu_get_font()
 
 currHeldSlider = MAX_PLAYERS
-local function render_user_volume_slider(index, x, y, width, height)
+local function render_user_volume_slider(index, x, y, width, height, info)
     local v = gVoiceStates[index]
 
     if v.speakVol == -1 then
@@ -51,10 +51,12 @@ local function render_user_volume_slider(index, x, y, width, height)
 
     -- Render User Info
     djui_hud_set_font(FONT_USER)
-    local textName = gNetworkPlayers[index].name .. (index == 0 and " (Input)" or "")
-    djui_hud_print_text(textName, x, y + height, 1)
-    local textVol = tostring(math.round(v.volume * 100)) .. "%"
-    djui_hud_print_text(textVol, x + width - djui_hud_measure_text(textVol), y + height, 1)
+    if info then
+        local textName = gNetworkPlayers[index].name .. (index == 0 and " (Input)" or "")
+        djui_hud_print_text(textName, x, y + height, 1)
+        local textVol = tostring(math.round(v.volume*100)).."%"
+        djui_hud_print_text(textVol, x + width - djui_hud_measure_text(textVol), y + height, 1)
+    end
 
     -- Volume Bars
     djui_hud_set_color(255, 255, 255, 100)
@@ -77,15 +79,12 @@ local function render_voice_settings()
     djui_hud_render_djui(screenWidth - 500, 0, 500, screenHeight)
 
     djui_hud_set_color(255, 255, 255, 255)
-    local userHeight = (screenHeight - 110) / (MAX_PLAYERS)
-    render_user_volume_slider(0, screenWidth - 450, screenHeight - 20 - (userHeight * 1.5), 400,
-        math.max(userHeight * 1.5 - 35, 5))
+    local userHeight = math.min((screenHeight - 120)/(MAX_PLAYERS), 20)
+    render_user_volume_slider(0, screenWidth - 475, screenHeight - 50 - (userHeight*1.5), 450, math.max(userHeight*1.5, 5), true)
     local inactive = 0
     for i = 1, MAX_PLAYERS - 1 do
         if true then --gNetworkPlayers[i].connected then
-            render_user_volume_slider(i, screenWidth - 400,
-                screenHeight - 20 - (userHeight * 1.5) - ((userHeight + 2) * (i - inactive)), 350,
-                math.max(userHeight - 35, 5))
+            render_user_volume_slider(i, screenWidth - 375, screenHeight - 50 - (userHeight*1.5) - ((userHeight + 10)*(i - inactive)), 350, math.max(userHeight, 5))
         else
             inactive = inactive + 1
         end
