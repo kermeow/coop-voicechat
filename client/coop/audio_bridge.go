@@ -28,7 +28,8 @@ type opusFrame struct {
 
 type voiceState struct {
 	volume      float32
-	pan         float32
+	panL        float32
+	panR        float32
 	attenuation float32
 
 	pos   vec
@@ -61,7 +62,8 @@ func newSpeaker() *speaker {
 	s := &speaker{
 		state: &voiceState{
 			volume:      0,
-			pan:         0,
+			panL:        0,
+			panR:        0,
 			attenuation: 1,
 		},
 
@@ -86,10 +88,9 @@ func (s *speaker) processAudio(out [][]float32) {
 		ms += math.Pow(float64(pcm), 2)
 
 		pcm *= s.state.volume * s.state.attenuation
-		pcmL, pcmR := pcm, pcm
 
-		out[0][i] = pcmL
-		out[1][i] = pcmR
+		out[0][i] = pcm * s.state.panL
+		out[1][i] = pcm * s.state.panR
 	}
 	s.rms = float32(math.Sqrt(ms / float64(FRAMES_PER_BUFFER)))
 	s.pcmBuf = s.pcmBuf[FRAMES_PER_BUFFER:]
@@ -98,9 +99,10 @@ func (s *speaker) processAudio(out [][]float32) {
 type AudioBridge struct {
 	bridge *Bridge
 
-	localState *voiceState
-	localFace  vec
-	speakers   map[uint8]*speaker
+	localState   *voiceState
+	localForward vec
+	localRight   vec
+	speakers     map[uint8]*speaker
 
 	inFrames []*opusFrame
 	inStream *portaudio.Stream
@@ -189,12 +191,20 @@ func (b *AudioBridge) recv() {
 		fz, _ := local.ReadFloat64()
 		lakituFoc := vec{fx, fy, fz}
 
-		b.localFace = lakituFoc.Sub(lakituPos).Unit()
+		b.localForward = lakituFoc.Sub(lakituPos).Unit()
+		b.localRight, _ = b.localForward.Cross(vec{0, 1, 0})
 	}
 
 	for _, speaker := range b.speakers {
-		distance := speaker.state.pos.Sub(b.localState.pos).Magnitude()
+		difference := speaker.state.pos.Sub(b.localState.pos)
+		distance := difference.Magnitude()
 		speaker.state.attenuation = min(1, 1/float32(distance/256))
+
+		direction := difference.Unit()
+		pan := direction.Dot(b.localRight)
+		angle := (pan + 1) * (math.Pi / 4)
+		speaker.state.panL = float32(math.Cos(angle))
+		speaker.state.panR = float32(math.Sin(angle))
 
 		inFile, err := b.bridge.recvFS.Get(speaker.fileName)
 		if err != nil {
