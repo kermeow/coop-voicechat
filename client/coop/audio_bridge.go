@@ -5,8 +5,11 @@ import (
 	"math"
 
 	"github.com/gordonklaus/portaudio"
+	"github.com/quartercastle/vector"
 	"gopkg.in/hraban/opus.v2"
 )
+
+type vec = vector.Vector
 
 const SAMPLE_RATE = 48000 // opus is really annoying about this :(
 const CHANNELS = 1        // mono
@@ -23,32 +26,50 @@ type opusFrame struct {
 	data      []byte
 }
 
+type voiceState struct {
+	volume      float32
+	pan         float32
+	attenuation float32
+
+	pos   vec
+	level uint8
+	area  uint8
+}
+
+func (v *voiceState) read(f *ModFSFile) {
+	v.volume, _ = f.ReadFloat32()
+	x, _ := f.ReadFloat64()
+	y, _ := f.ReadFloat64()
+	z, _ := f.ReadFloat64()
+	v.pos = vec{x, y, z}
+	v.level, _ = f.ReadUint8()
+	v.area, _ = f.ReadUint8()
+}
+
 type speaker struct {
 	*portaudio.Stream
 
-	state *voiceState
+	state    *voiceState
+	fileName string
 
 	pcmBuf  []float32
 	rms     float32
 	decoder *opus.Decoder
 }
 
-type voiceState struct {
-	volume   float32
-	fileName string
-}
-
 func newSpeaker() *speaker {
 	s := &speaker{
 		state: &voiceState{
-			volume: 0,
+			volume:      0,
+			pan:         0,
+			attenuation: 1,
 		},
 
 		pcmBuf: make([]float32, 0),
 		rms:    0,
 	}
 
-	s.Stream, _ = portaudio.OpenDefaultStream(0, 1, SAMPLE_RATE, FRAMES_PER_BUFFER, s.processAudio)
+	s.Stream, _ = portaudio.OpenDefaultStream(0, 2, SAMPLE_RATE, FRAMES_PER_BUFFER, s.processAudio)
 	s.decoder, _ = opus.NewDecoder(SAMPLE_RATE, CHANNELS)
 
 	return s
@@ -63,7 +84,12 @@ func (s *speaker) processAudio(out [][]float32) {
 	for i := range FRAMES_PER_BUFFER {
 		pcm := s.pcmBuf[i]
 		ms += math.Pow(float64(pcm), 2)
-		out[0][i] = pcm * s.state.volume
+
+		pcm *= s.state.volume * s.state.attenuation
+		pcmL, pcmR := pcm, pcm
+
+		out[0][i] = pcmL
+		out[1][i] = pcmR
 	}
 	s.rms = float32(math.Sqrt(ms / float64(FRAMES_PER_BUFFER)))
 	s.pcmBuf = s.pcmBuf[FRAMES_PER_BUFFER:]
@@ -73,6 +99,7 @@ type AudioBridge struct {
 	bridge *Bridge
 
 	localState *voiceState
+	localFace  vec
 	speakers   map[uint8]*speaker
 
 	inFrames []*opusFrame
@@ -137,24 +164,39 @@ func (b *AudioBridge) recv() {
 			log.Println("Speaker", i, "added")
 		}
 
-		speaker.state.volume, _ = states.ReadFloat32()
-
 		fileNameLen, _ := states.ReadUint8()
 		fileNameBytes, _ := states.ReadBytes(int(fileNameLen))
-		speaker.state.fileName = string(fileNameBytes)
+		speaker.fileName = string(fileNameBytes)
+
+		speaker.state.read(states)
 	}
 
 	{
-		localFile, err := b.bridge.recvFS.Get("local")
+		local, err := b.bridge.recvFS.Get("local")
 		if err != nil {
 			return
 		}
 
-		b.localState.volume, _ = localFile.ReadFloat32()
+		b.localState.read(local)
+
+		px, _ := local.ReadFloat64()
+		py, _ := local.ReadFloat64()
+		pz, _ := local.ReadFloat64()
+		lakituPos := vec{px, py, pz}
+
+		fx, _ := local.ReadFloat64()
+		fy, _ := local.ReadFloat64()
+		fz, _ := local.ReadFloat64()
+		lakituFoc := vec{fx, fy, fz}
+
+		b.localFace = lakituFoc.Sub(lakituPos).Unit()
 	}
 
 	for _, speaker := range b.speakers {
-		inFile, err := b.bridge.recvFS.Get(speaker.state.fileName)
+		distance := speaker.state.pos.Sub(b.localState.pos).Magnitude()
+		speaker.state.attenuation = min(1, 1/float32(distance/256))
+
+		inFile, err := b.bridge.recvFS.Get(speaker.fileName)
 		if err != nil {
 			continue
 		}

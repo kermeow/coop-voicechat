@@ -1,5 +1,4 @@
 local MAGIC_NUMBER = "smvc"
-
 local PACKET_HEADER_FMT = "!1<BI4B"
 
 do
@@ -10,6 +9,35 @@ do
             speakVol = -1,
             frames = {}
         }
+    end
+end
+
+---@param i number
+---@param file ModFsFile
+local function write_state_to_file(i, file)
+    local voiceState = gVoiceStates[i]
+    local marioState = gMarioStates[i]
+    local networkPlayer = gNetworkPlayers[i]
+
+    file:write_number(voiceState.volume, FLOAT_TYPE_F32)
+
+    local headHeight = marioState.marioObj.hitboxHeight - 60
+
+    file:write_number(marioState.pos.x, FLOAT_TYPE_F64)
+    file:write_number(marioState.pos.y + headHeight, FLOAT_TYPE_F64)
+    file:write_number(marioState.pos.z, FLOAT_TYPE_F64)
+
+    file:write_integer(networkPlayer.currLevelNum, INT_TYPE_U8)
+    file:write_integer(networkPlayer.currAreaIndex, INT_TYPE_U8)
+
+    if i == 0 then
+        file:write_number(gLakituState.curPos.x, FLOAT_TYPE_F64)
+        file:write_number(gLakituState.curPos.y, FLOAT_TYPE_F64)
+        file:write_number(gLakituState.curPos.z, FLOAT_TYPE_F64)
+
+        file:write_number(gLakituState.curFocus.x, FLOAT_TYPE_F64)
+        file:write_number(gLakituState.curFocus.y, FLOAT_TYPE_F64)
+        file:write_number(gLakituState.curFocus.z, FLOAT_TYPE_F64)
     end
 end
 
@@ -66,17 +94,16 @@ function audio_send()
 
     gVoiceBridge.sendFS:delete_file("local")
     local localFile = gVoiceBridge.sendFS:create_file("local", false)
-    local localState = gVoiceStates[0]
-    localFile:write_number(localState.volume, FLOAT_TYPE_F32)
+    write_state_to_file(0, localFile)
 
     for i = 1, MAX_PLAYERS - 1 do
         local voiceState = gVoiceStates[i]
         local fileName = string.format("voice-%d", i)
         if gNetworkPlayers[i].connected then
             states:write_integer(i, INT_TYPE_U8)
-            states:write_number(voiceState.volume, FLOAT_TYPE_F32)
             states:write_integer(#fileName, INT_TYPE_U8)
             states:write_bytes(fileName)
+            write_state_to_file(i, states)
 
             gVoiceBridge.sendFS:delete_file(fileName)
             local sendFile = gVoiceBridge.sendFS:create_file(fileName, false)

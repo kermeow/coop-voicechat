@@ -7,6 +7,8 @@ github.com/go-text/typesetting v0.3.0 h1:OWCgYpp8njoxSRpwrdd1bQOxdjOXDj9Rqart9ML
 github.com/go-text/typesetting v0.3.0/go.mod h1:qjZLkhRgOEYMhU9eHBr3AR4sfnGJvOXNLt8yRAySFuY=
 github.com/gordonklaus/portaudio v0.0.0-20260203164431-765aa7dfa631 h1:8TBHztmhDfAAg34yddptshinXBtDQwgKGlMfdtSFETw=
 github.com/gordonklaus/portaudio v0.0.0-20260203164431-765aa7dfa631/go.mod h1:esZFQEUwqC+l76f2R8bIWSwXMaPbp79PppwZ1eJhFco=
+github.com/quartercastle/vector v0.2.0 h1:qpVsHi7S624B/NrUl6Osfs6F25kKaZJI+gteUIdLQ6g=
+github.com/quartercastle/vector v0.2.0/go.mod h1:jRB+p+Bk9qkkZHC72+N6fztVgih6kYslX0vk+3dL5V4=
 golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 h1:R84qjqJb5nVJMxqWYb3np9L5ZsaDtB+a39EqjV0JSUM=
 golang.org/x/exp/shiny v0.0.0-20250408133849-7e4ce0ab07d0 h1:tMSqXTK+AQdW3LpCbfatHSRPHeW6+2WuxaVQuHftn80=
 golang.org/x/exp/shiny v0.0.0-20250408133849-7e4ce0ab07d0/go.mod h1:ygj7T6vSGhhm/9yTpOQQNvuAUFziTH7RUiH74EoE2C8=
