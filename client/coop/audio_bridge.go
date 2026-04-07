@@ -5,8 +5,8 @@ import (
 	"math"
 
 	"github.com/gordonklaus/portaudio"
+	"github.com/hraban/opus"
 	"github.com/quartercastle/vector"
-	"gopkg.in/hraban/opus.v2"
 )
 
 type vec = vector.Vector
