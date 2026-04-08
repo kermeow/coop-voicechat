@@ -96,7 +96,7 @@ function audio_send()
 
     local states = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "states", false)
     mod_fs_file_clear(states)
-    localFile:write_bytes("smvc state data ")
+    states:write_bytes("smvc state data ")
 
     for i = 1, MAX_PLAYERS - 1 do
         local voiceState = gVoiceStates[i]
