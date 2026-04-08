@@ -45,7 +45,7 @@ func main() {
 	coop.EnsureDirs()
 
 	bridge = coop.NewBridge(options)
-	go bridge.Run()
+	go bridge.Start()
 	defer bridge.Stop()
 
 	systray.Run(onReady, onExit)
