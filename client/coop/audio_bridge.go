@@ -153,6 +153,8 @@ func (b *audioBridge) recv() {
 		return
 	}
 
+	states.Cursor += 16
+
 	for states.Cursor < len(states.Data) {
 		rawi, _ := states.ReadUint8()
 		i, disconnected := rawi&0x7f, rawi&0x80
@@ -186,6 +188,7 @@ func (b *audioBridge) recv() {
 			return
 		}
 
+		local.Cursor += 16
 		b.localState.read(local)
 
 		px, _ := local.ReadFloat64()
@@ -221,6 +224,9 @@ func (b *audioBridge) recv() {
 		if err != nil {
 			continue
 		}
+
+		inFile.Cursor += 17
+
 		for inFile.Cursor < len(inFile.Data) {
 			syncFrame, _ := inFile.ReadUint32()
 			dataLen, _ := inFile.ReadUint32()
@@ -231,6 +237,7 @@ func (b *audioBridge) recv() {
 			pcmBuf := make([]float32, SAMPLES_PER_BUFFER)
 
 			if speaker.fec {
+				speaker.fec = false
 				speaker.decoder.DecodeFECFloat32(data, pcmBuf)
 			} else {
 				speaker.decoder.DecodeFloat32(data, pcmBuf)
@@ -266,6 +273,7 @@ func (b *audioBridge) send() {
 	b.inFrames = b.inFrames[j:]
 
 	recording := b.bridge.sendFS.Create("recording")
+	recording.WriteBytes([]byte("smvc input data "))
 	for _, v := range b.inFrames {
 		recording.WriteUint32(v.syncFrame)
 		recording.WriteUint32(uint32(len(v.data)))
@@ -273,6 +281,7 @@ func (b *audioBridge) send() {
 	}
 
 	volumes := b.bridge.sendFS.Create("volumes")
+	volumes.WriteBytes([]byte("smvc volume data "))
 	volumes.WriteUint8(0)
 	volumes.WriteFloat32(b.inRms)
 	for i, speaker := range b.speakers {
@@ -283,7 +292,7 @@ func (b *audioBridge) send() {
 
 func (b *audioBridge) inputLoop() error {
 	b.inStream.Start()
-	defer b.inStream.Abort()
+	defer b.inStream.Stop()
 
 	for b.bridge.Running {
 		err := b.inStream.Read()

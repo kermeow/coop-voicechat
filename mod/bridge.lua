@@ -4,7 +4,7 @@ local last_version_warning = 0
 local RECV_MOD_FS_NAME = "coop-voicechat-recv"
 
 do -- bridge_init
-    mod_fs_hide_errors(true)
+    -- mod_fs_hide_errors(true)
 
     gVoiceBridge = {}
 

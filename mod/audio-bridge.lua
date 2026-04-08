@@ -46,7 +46,7 @@ function audio_recv()
     if not recording then
         return
     end
-    recording:rewind()
+    recording:seek(16, FILE_SEEK_SET)
 
     local frames = 0
     local order = 0
@@ -69,7 +69,7 @@ function audio_recv()
     if not volumes then
         return
     end
-    volumes:rewind()
+    volumes:seek(17, FILE_SEEK_SET)
 
     local newVolumes = {}
     while not volumes:is_eof() do
@@ -91,10 +91,12 @@ end
 function audio_send()
     local localFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "local", false)
     mod_fs_file_clear(localFile)
+    localFile:write_bytes("smvc local data ")
     write_state_to_file(0, localFile)
 
     local states = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "states", false)
     mod_fs_file_clear(states)
+    localFile:write_bytes("smvc state data ")
 
     for i = 1, MAX_PLAYERS - 1 do
         local voiceState = gVoiceStates[i]
@@ -107,6 +109,7 @@ function audio_send()
 
             local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, fileName, false)
             mod_fs_file_clear(sendFile)
+            sendFile:write_bytes("smvc output data ")
 
             -- todo: sort the frames just in case :p
             for i = #voiceState.frames, 1, -1 do
@@ -144,7 +147,7 @@ local function on_bytestring_receive(raw)
 
         local voiceState = gVoiceStates[localIndex]
 
-        while #voiceState.frames >= 32 do
+        while #voiceState.frames >= 64 do
             table.remove(voiceState.frames, 1)
         end
 
