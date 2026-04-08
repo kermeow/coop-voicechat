@@ -2,6 +2,7 @@ package main
 
 import (
 	"coop-voicechat/assets"
+	"coop-voicechat/config"
 	"coop-voicechat/coop"
 	"log"
 
@@ -15,6 +16,7 @@ var GitBranch string = "unknown"
 var GitCommit string = "unknown"
 
 var bridge *coop.Bridge
+var options *config.Config
 
 func main() {
 	log.Printf("coop-voicechat %s (%s@%s)\n", GitDescribe, GitCommit, GitBranch)
@@ -28,6 +30,10 @@ func main() {
 	}
 	defer one.Unlock()
 
+	log.Println("Reading options")
+	options, _ = config.Load(coop.VoiceOptions)
+	defer options.Save(coop.VoiceOptions)
+
 	log.Println("Initialize PortAudio")
 	err = portaudio.Initialize()
 	if err != nil {
@@ -38,7 +44,7 @@ func main() {
 	log.Println("Checking sm64coopdx dirs")
 	coop.EnsureDirs()
 
-	bridge = coop.NewBridge()
+	bridge = coop.NewBridge(options)
 	go bridge.Run()
 	defer bridge.Stop()
 
@@ -69,6 +75,18 @@ func onReady() {
 			}
 		}
 	}()
+
+	systray.AddSeparator()
+
+	mPanning := systray.AddMenuItemCheckbox("Stereo Panning", "Hear players to your left and right", options.StereoPanning)
+	mPanning.Click(func() {
+		options.StereoPanning = !options.StereoPanning
+		if options.StereoPanning {
+			mPanning.Check()
+		} else {
+			mPanning.Uncheck()
+		}
+	})
 
 	systray.AddSeparator()
 

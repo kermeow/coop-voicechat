@@ -1,6 +1,7 @@
 package coop
 
 import (
+	"coop-voicechat/config"
 	"log"
 	"time"
 )
@@ -21,6 +22,7 @@ type Bridge struct {
 	Connected bool
 	Running   bool
 	Event     chan BridgeEvent
+	Options   *config.Config
 
 	audio *audioBridge
 
@@ -34,7 +36,7 @@ type Bridge struct {
 	recvFS *ModFS
 }
 
-func NewBridge() *Bridge {
+func NewBridge(options *config.Config) *Bridge {
 	send_modfs, err := ModFSGet("coop-voicechat-recv")
 	if err != nil {
 		panic(err)
@@ -51,6 +53,7 @@ func NewBridge() *Bridge {
 		Connected: false,
 		Running:   false,
 		Event:     make(chan BridgeEvent),
+		Options:   options,
 
 		syncLocalFrame:      1,
 		syncRemoteFrame:     0,

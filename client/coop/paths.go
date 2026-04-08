@@ -40,8 +40,10 @@ func findAppData() string {
 }
 
 var (
-	GameDir = findAppData()
-	SavDir  = path.Join(GameDir, "sav")
+	GameDir      = findAppData()
+	SavDir       = path.Join(GameDir, "sav")
+	
+	VoiceOptions = path.Join(GameDir, "coop-voicechat.toml")
 )
 
 func EnsureDirs() {

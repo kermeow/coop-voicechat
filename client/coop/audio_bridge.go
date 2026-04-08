@@ -212,12 +212,16 @@ func (b *audioBridge) recv() {
 			speaker.state.attenuation = 0
 		}
 
-		direction := difference.Unit()
-		pan := direction.Dot(b.localRight)
-		angle := (pan + 1) * (math.Pi / 4)
-		speaker.state.panL = float32(math.Cos(angle))
-		speaker.state.panR = float32(math.Sin(angle))
-
+		if b.bridge.Options.StereoPanning {
+			direction := difference.Unit()
+			pan := direction.Dot(b.localRight)
+			angle := (pan + 1) * (math.Pi / 4)
+			speaker.state.panL = float32(math.Cos(angle))
+			speaker.state.panR = float32(math.Sin(angle))
+		} else {
+			speaker.state.panL = 1
+			speaker.state.panR = 1
+		}
 		inFile, err := b.bridge.recvFS.Get(speaker.fileName)
 		if err != nil {
 			continue
