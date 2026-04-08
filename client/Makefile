@@ -9,8 +9,6 @@ GOARCH ?= amd64
 
 GOTAGS ?=
 
-GOTAGS ::= nolibopusfile,$(GOTAGS)
-
 CC := gcc
 STRIP := strip
 
@@ -55,10 +53,6 @@ ifeq ($(HOST_OS),Linux)
   ifneq (,$(findstring aarch64,$(machine)))
     GOARCH ?= arm64
   endif
-
-  ifeq ($(GOOS),windows)
-	  CROSS ?= x86_64-w64-mingw32-
-  endif
 endif
 
 ### Output file name
@@ -67,7 +61,11 @@ OUTDIR ?= out
 OUTFILE ?= coop-voicechat
 
 ifeq ($(GOOS),windows)
+  LDFLAGS += -H=windowsgui
   OUTFILE ::= $(OUTFILE).exe
+  ifneq ($(HOST_OS),Windows)
+	  CROSS ?= x86_64-w64-mingw32-
+  endif
 endif
 
 OUTPATH := $(OUTDIR)/$(OUTFILE)
