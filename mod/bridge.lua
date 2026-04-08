@@ -38,7 +38,7 @@ end
 -- checks if new data is available
 local function bridge_poll()
     gVoiceBridge.recvFS = mod_fs_reload(RECV_MOD_FS_NAME)
-    if not gVoiceBridge.recvFS then
+    if not (gVoiceBridge.sendFS and gVoiceBridge.recvFS) then
         return false
     end
 

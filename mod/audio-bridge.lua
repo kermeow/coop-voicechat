@@ -89,12 +89,12 @@ function audio_recv()
 end
 
 function audio_send()
-    gVoiceBridge.sendFS:delete_file("states")
-    local states = gVoiceBridge.sendFS:create_file("states", false)
-
-    gVoiceBridge.sendFS:delete_file("local")
-    local localFile = gVoiceBridge.sendFS:create_file("local", false)
+    local localFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "local", false)
+    mod_fs_file_clear(localFile)
     write_state_to_file(0, localFile)
+
+    local states = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "states", false)
+    mod_fs_file_clear(states)
 
     for i = 1, MAX_PLAYERS - 1 do
         local voiceState = gVoiceStates[i]
@@ -105,8 +105,7 @@ function audio_send()
             states:write_bytes(fileName)
             write_state_to_file(i, states)
 
-            gVoiceBridge.sendFS:delete_file(fileName)
-            local sendFile = gVoiceBridge.sendFS:create_file(fileName, false)
+            local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, fileName, false)
 
             -- todo: sort the frames just in case :p
             for i = #voiceState.frames, 1, -1 do
@@ -143,6 +142,11 @@ local function on_bytestring_receive(raw)
         local localIndex = network_local_index_from_global(globalIndex)
 
         local voiceState = gVoiceStates[localIndex]
+
+        while #voiceState.frames >= 32 do
+            table.remove(voiceState.frames, 1)
+        end
+
         table.insert(voiceState.frames, {
             syncFrame = 0,
             frame = frame,

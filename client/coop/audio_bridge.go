@@ -17,9 +17,9 @@ const CHANNELS = 1        // mono
 const OPUS_BITRATE = 64000      // 64 kbps
 const OPUS_FRAME_SIZE_MS = 0.02 // 20 ms frames, we can go smaller but i dont want to
 
-const MAX_OPUS_FRAMES = 10                  // 200 ms backlog
-const MAX_DECODE_SAMPLES = SAMPLE_RATE * 10 // 200 ms backlog
-const FRAMES_PER_BUFFER = int(SAMPLE_RATE * OPUS_FRAME_SIZE_MS * CHANNELS)
+const MAX_ENCODE_FRAMES = 4                  // 80 ms backlog
+const MAX_DECODE_SAMPLES = SAMPLE_RATE * 0.1 // 100 ms backlog
+const SAMPLES_PER_BUFFER = int(SAMPLE_RATE * OPUS_FRAME_SIZE_MS * CHANNELS)
 
 type opusFrame struct {
 	syncFrame uint32
@@ -56,6 +56,7 @@ type speaker struct {
 	pcmBuf  []float32
 	rms     float32
 	decoder *opus.Decoder
+	fec     bool
 }
 
 func newSpeaker() *speaker {
@@ -69,21 +70,27 @@ func newSpeaker() *speaker {
 
 		pcmBuf: make([]float32, 0),
 		rms:    0,
+		fec:    false,
 	}
 
-	s.Stream, _ = portaudio.OpenDefaultStream(0, 2, SAMPLE_RATE, FRAMES_PER_BUFFER, s.processAudio)
+	s.Stream, _ = portaudio.OpenDefaultStream(0, 2, SAMPLE_RATE, SAMPLES_PER_BUFFER, s.processAudio)
 	s.decoder, _ = opus.NewDecoder(SAMPLE_RATE, CHANNELS)
 
 	return s
 }
 
 func (s *speaker) processAudio(out [][]float32) {
-	if len(s.pcmBuf) < FRAMES_PER_BUFFER {
+	if len(s.pcmBuf) < SAMPLES_PER_BUFFER {
+		s.fec = true
+		pcmBuf := make([]float32, SAMPLES_PER_BUFFER)
+		s.decoder.DecodePLCFloat32(pcmBuf)
+		copy(out[0], pcmBuf)
+		copy(out[1], pcmBuf)
 		return
 	}
 
 	var ms float64 = 0
-	for i := range FRAMES_PER_BUFFER {
+	for i := range SAMPLES_PER_BUFFER {
 		pcm := s.pcmBuf[i]
 		ms += float64(pcm * pcm)
 
@@ -92,8 +99,8 @@ func (s *speaker) processAudio(out [][]float32) {
 		out[0][i] = pcm * s.state.panL
 		out[1][i] = pcm * s.state.panR
 	}
-	s.rms = float32(math.Sqrt(ms / float64(FRAMES_PER_BUFFER)))
-	s.pcmBuf = s.pcmBuf[FRAMES_PER_BUFFER:]
+	s.rms = float32(math.Sqrt(ms / float64(SAMPLES_PER_BUFFER)))
+	s.pcmBuf = s.pcmBuf[SAMPLES_PER_BUFFER:]
 }
 
 type audioBridge struct {
@@ -114,8 +121,8 @@ type audioBridge struct {
 }
 
 func newAudioBridge(bridge *Bridge) *audioBridge {
-	inBuf := make([]float32, FRAMES_PER_BUFFER)
-	inStream, _ := portaudio.OpenDefaultStream(1, 0, SAMPLE_RATE, FRAMES_PER_BUFFER, inBuf)
+	inBuf := make([]float32, SAMPLES_PER_BUFFER)
+	inStream, _ := portaudio.OpenDefaultStream(1, 0, SAMPLE_RATE, SAMPLES_PER_BUFFER, inBuf)
 	encoder, _ := opus.NewEncoder(SAMPLE_RATE, CHANNELS, opus.AppVoIP)
 	encoder.SetBitrate(OPUS_BITRATE)
 	return &audioBridge{
@@ -221,13 +228,19 @@ func (b *audioBridge) recv() {
 			if syncFrame <= b.bridge.syncLastRemoteFrame {
 				continue
 			}
-			pcmBuf := make([]float32, FRAMES_PER_BUFFER)
-			n, _ := speaker.decoder.DecodeFloat32(data, pcmBuf)
+			pcmBuf := make([]float32, SAMPLES_PER_BUFFER)
+
+			if speaker.fec {
+				speaker.decoder.DecodeFECFloat32(data, pcmBuf)
+			} else {
+				speaker.decoder.DecodeFloat32(data, pcmBuf)
+			}
 			for i, pcm := range pcmBuf {
 				// soft clip
 				pcmBuf[i] = float32(math.Tanh(float64(pcm)))
 			}
-			speaker.pcmBuf = append(speaker.pcmBuf, pcmBuf[:n]...)
+			i := max(0, len(speaker.pcmBuf)-(MAX_DECODE_SAMPLES+SAMPLES_PER_BUFFER))
+			speaker.pcmBuf = append(speaker.pcmBuf[i:], pcmBuf...)
 		}
 	}
 }
@@ -282,16 +295,16 @@ func (b *audioBridge) inputLoop() error {
 			continue
 		}
 
-		pcmBuf := make([]float32, FRAMES_PER_BUFFER)
+		pcmBuf := make([]float32, SAMPLES_PER_BUFFER)
 
 		var ms float64 = 0
 		for i, pcm := range b.inBuf {
 			ms += math.Pow(float64(pcm), 2)
 			pcmBuf[i] = pcm * b.localState.volume
 		}
-		b.inRms = float32(math.Sqrt(ms / float64(FRAMES_PER_BUFFER)))
+		b.inRms = float32(math.Sqrt(ms / float64(SAMPLES_PER_BUFFER)))
 
-		i := max(0, len(b.inFrames)-MAX_OPUS_FRAMES)
+		i := max(0, len(b.inFrames)-MAX_ENCODE_FRAMES)
 		n, err := b.encoder.EncodeFloat32(pcmBuf, b.encBuf)
 		frame := &opusFrame{
 			syncFrame: 0,
