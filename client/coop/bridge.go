@@ -12,21 +12,19 @@ const POLL_INTERVAL = 33           // 1/30
 const POLL_INTERVAL_INACTIVE = 100 // 1/10
 
 type Bridge struct {
-	Connected bool
 	Running   bool
+	Connected bool
 	Event     chan BridgeEvent
 	Options   *config.Config
 
-	audio *audioBridge
+	SendFs *ModFS
+	RecvFs *ModFS
 
 	syncLocalFrame      uint32
 	syncRemoteFrame     uint32
 	syncRemoteAckFrame  uint32
 	syncLastRemoteFrame uint32
 	syncTimeoutCounter  uint8
-
-	sendFS *ModFs
-	recvFS *ModFs
 }
 
 func NewBridge(options *config.Config) *Bridge {
@@ -43,19 +41,19 @@ func NewBridge(options *config.Config) *Bridge {
 	recv_modfs.Write()
 
 	return &Bridge{
-		Connected: false,
 		Running:   false,
+		Connected: false,
 		Event:     make(chan BridgeEvent),
 		Options:   options,
+
+		SendFs: send_modfs,
+		RecvFs: recv_modfs,
 
 		syncLocalFrame:      1,
 		syncRemoteFrame:     0,
 		syncRemoteAckFrame:  0,
 		syncLastRemoteFrame: 0,
 		syncTimeoutCounter:  0,
-
-		sendFS: send_modfs,
-		recvFS: recv_modfs,
 	}
 }
 
@@ -80,17 +78,12 @@ func (b *Bridge) disconnect() {
 	}
 	b.Connected = false
 	b.event(BridgeDisconnect)
-
-	for i, s := range b.audio.speakers {
-		s.Abort()
-		delete(b.audio.speakers, i)
-	}
 }
 
 func (b *Bridge) poll() bool {
-	b.recvFS.Read(false)
+	b.RecvFs.Read(false)
 
-	syncFile, err := b.recvFS.Get("sync")
+	syncFile, err := b.RecvFs.Get("sync")
 	if err != nil {
 		return false
 	}
@@ -138,29 +131,19 @@ func (b *Bridge) poll() bool {
 	return false
 }
 
-func (b *Bridge) recv() {
-	b.audio.recv()
-}
-
-func (b *Bridge) send() {
-	b.audio.send()
-}
-
 func (b *Bridge) update() {
 	if b.poll() {
-		b.recv()
-		b.send()
 	}
 
-	syncFile := b.sendFS.Create("sync")
+	syncFile := b.SendFs.Create("sync")
 	syncFile.WriteUint16(BRIDGE_VERSION)
 	syncFile.WriteUint32(b.syncLocalFrame)
 	syncFile.WriteUint32(b.syncRemoteFrame)
 
-	b.sendFS.Write()
+	b.SendFs.Write()
 }
 
-func (b *Bridge) Run() {
+func (b *Bridge) Start() {
 	if b.Running {
 		return
 	}
@@ -168,9 +151,6 @@ func (b *Bridge) Run() {
 	log.Println("Bridge running")
 
 	b.Running = true
-
-	b.audio = newAudioBridge(b)
-	b.audio.Run()
 
 	for b.Running {
 		b.update()
@@ -190,5 +170,5 @@ func (b *Bridge) Stop() {
 	log.Println("Bridge stopping")
 
 	b.Running = false
-	b.audio = nil
+	b.Connected = false
 }
