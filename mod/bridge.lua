@@ -25,11 +25,13 @@ end
 
 local function bridge_connect()
     gVoiceBridge.connected = true
+    play_sound(SOUND_GENERAL_COIN, gGlobalSoundSource)
     djui_popup_create("\\#60f060\\Voice Chat client connected!", 1)
 end
 
 local function bridge_disconnect()
     gVoiceBridge.connected = false
+    play_sound(SOUND_MENU_PAUSE_HIGHPRIO, gGlobalSoundSource)
     djui_popup_create("\\#ffa060\\Voice Chat client disconnected!", 1)
 end
 
