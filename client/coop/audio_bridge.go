@@ -84,9 +84,7 @@ func (s *speaker) processAudio(out [][]float32) {
 		s.fec = true
 		pcmBuf := make([]float32, SAMPLES_PER_BUFFER)
 		s.decoder.DecodePLCFloat32(pcmBuf)
-		copy(out[0], pcmBuf)
-		copy(out[1], pcmBuf)
-		return
+		s.pcmBuf = append(s.pcmBuf, pcmBuf...)
 	}
 
 	var ms float64 = 0
