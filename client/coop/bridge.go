@@ -76,8 +76,6 @@ func (b *Bridge) connect() {
 	}
 	b.Connected = true
 	b.event(BridgeConnect)
-
-	log.Println("Bridge connected")
 }
 
 func (b *Bridge) disconnect() {
@@ -86,8 +84,6 @@ func (b *Bridge) disconnect() {
 	}
 	b.Connected = false
 	b.event(BridgeDisconnect)
-
-	log.Println("Bridge disconnected")
 }
 
 func (b *Bridge) poll() bool {
@@ -124,6 +120,7 @@ func (b *Bridge) poll() bool {
 			b.syncTimeoutCounter = 0
 			if !lastActive {
 				b.connect()
+				log.Printf("Bridge connected\n")
 			}
 		}
 		return b.Connected
@@ -132,6 +129,7 @@ func (b *Bridge) poll() bool {
 	if lastActive && !(ackFrameValid && ackFrameThreshold) {
 		b.syncTimeoutCounter++
 		if b.syncTimeoutCounter > 6 {
+			log.Printf("Bridge disconnected - av:%t aft:%t slf:%d srf:%d sraf:%d stc:%d\n", ackFrameValid, ackFrameThreshold, b.syncLocalFrame, b.syncRemoteFrame, b.syncRemoteAckFrame, b.syncTimeoutCounter)
 			b.disconnect()
 		}
 	}
