@@ -17,8 +17,8 @@ type Bridge struct {
 	Event     chan BridgeEvent
 	Options   *config.Config
 
-	SendFs *ModFS
-	RecvFs *ModFS
+	SendFs *ModFs
+	RecvFs *ModFs
 
 	syncLocalFrame      uint32
 	syncRemoteFrame     uint32
