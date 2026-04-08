@@ -17,8 +17,8 @@ type Bridge struct {
 	Event     chan BridgeEvent
 	Options   *config.Config
 
-	SendFs *ModFS
-	RecvFs *ModFS
+	SendFs *ModFs
+	RecvFs *ModFs
 
 	syncLocalFrame      uint32
 	syncRemoteFrame     uint32
@@ -28,13 +28,13 @@ type Bridge struct {
 }
 
 func NewBridge(options *config.Config) *Bridge {
-	send_modfs, err := ModFSGet("coop-voicechat-recv")
+	send_modfs, err := ModFsGet("coop-voicechat-recv")
 	if err != nil {
 		panic(err)
 	}
 	send_modfs.Write()
 
-	recv_modfs, err := ModFSGet("coop-voicechat")
+	recv_modfs, err := ModFsGet("coop-voicechat")
 	if err != nil {
 		panic(err)
 	}

@@ -15,12 +15,12 @@ var bin binary.ByteOrder = binary.LittleEndian
 
 // THIS IS AN INCOMPLETE IMPLEMENTATION __BY DESIGN__
 
-type ModFS struct {
+type ModFs struct {
 	path  string
-	files map[string]*ModFSFile
+	files map[string]*ModFsFile
 }
 
-type ModFSProperties struct {
+type ModFsProperties struct {
 	Files map[string]struct {
 		IsPublic bool `json:"isPublic"`
 		IsText   bool `json:"isText"`
@@ -28,23 +28,23 @@ type ModFSProperties struct {
 	IsPublic bool `json:"isPublic"`
 }
 
-func ModFSGet(modPath string) (*ModFS, error) {
-	m := &ModFS{
+func ModFsGet(modPath string) (*ModFs, error) {
+	m := &ModFs{
 		path:  path.Join(SavDir, modPath+".modfs"),
-		files: make(map[string]*ModFSFile),
+		files: make(map[string]*ModFsFile),
 	}
 	return m, nil
 }
 
-func (m *ModFS) Get(fileName string) (*ModFSFile, error) {
+func (m *ModFs) Get(fileName string) (*ModFsFile, error) {
 	if _, ok := m.files[fileName]; !ok {
 		return nil, os.ErrNotExist
 	}
 	return m.files[fileName], nil
 }
 
-func (m *ModFS) Create(fileName string) *ModFSFile {
-	f := &ModFSFile{
+func (m *ModFs) Create(fileName string) *ModFsFile {
+	f := &ModFsFile{
 		Data:   make([]byte, 0),
 		Cursor: 0,
 	}
@@ -52,7 +52,7 @@ func (m *ModFS) Create(fileName string) *ModFSFile {
 	return f
 }
 
-func (m *ModFS) Read(onlyCheckExists bool) (bool, error) {
+func (m *ModFs) Read(onlyCheckExists bool) (bool, error) {
 	zip, err := zip.OpenReader(m.path)
 	if err != nil {
 		return false, err
@@ -79,7 +79,7 @@ func (m *ModFS) Read(onlyCheckExists bool) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		m.files[v.Name] = &ModFSFile{
+		m.files[v.Name] = &ModFsFile{
 			Data:   data,
 			Cursor: 0,
 		}
@@ -88,14 +88,14 @@ func (m *ModFS) Read(onlyCheckExists bool) (bool, error) {
 	return true, nil
 }
 
-func (m *ModFS) Write() (bool, error) {
+func (m *ModFs) Write() (bool, error) {
 	file, err := os.OpenFile(m.path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return false, err
 	}
 	defer file.Close()
 
-	properties := ModFSProperties{
+	properties := ModFsProperties{
 		Files: make(map[string]struct {
 			IsPublic bool `json:"isPublic"`
 			IsText   bool `json:"isText"`
@@ -104,7 +104,7 @@ func (m *ModFS) Write() (bool, error) {
 	}
 
 	buf := new(bytes.Buffer)
-	zip := zip.NewWriter(buf)
+	z := zip.NewWriter(buf)
 
 	for name, v := range m.files {
 		properties.Files[name] = struct {
@@ -115,7 +115,10 @@ func (m *ModFS) Write() (bool, error) {
 			IsText:   false,
 		}
 
-		f, err := zip.Create(name)
+		f, err := z.CreateHeader(&zip.FileHeader{
+			Name:   name,
+			Method: zip.Store,
+		})
 		if err != nil {
 			return false, err
 		}
@@ -125,7 +128,10 @@ func (m *ModFS) Write() (bool, error) {
 		}
 	}
 
-	f, err := zip.Create("properties.json")
+	f, err := z.CreateHeader(&zip.FileHeader{
+		Name:   "properties.json",
+		Method: zip.Store,
+	})
 	if err != nil {
 		return false, err
 	}
@@ -134,20 +140,20 @@ func (m *ModFS) Write() (bool, error) {
 		return false, err
 	}
 
-	zip.Close()
+	z.Close()
 	file.Write(buf.Bytes())
 
 	return true, nil
 }
 
-type ModFSFile struct {
+type ModFsFile struct {
 	Data   []byte
 	Cursor int
 }
 
 // unused modfs rw functions: int8, int16, int32, int64, string, line
 
-func (f *ModFSFile) ReadBytes(l int) ([]byte, error) {
+func (f *ModFsFile) ReadBytes(l int) ([]byte, error) {
 	if f.Cursor+l > len(f.Data) {
 		return nil, io.ErrShortBuffer
 	}
@@ -156,7 +162,7 @@ func (f *ModFSFile) ReadBytes(l int) ([]byte, error) {
 	return data, nil
 }
 
-func (f *ModFSFile) ReadUint8() (uint8, error) {
+func (f *ModFsFile) ReadUint8() (uint8, error) {
 	data, err := f.ReadBytes(1)
 	if err != nil {
 		return 0, err
@@ -164,7 +170,7 @@ func (f *ModFSFile) ReadUint8() (uint8, error) {
 	return data[0], nil
 }
 
-func (f *ModFSFile) ReadUint16() (uint16, error) {
+func (f *ModFsFile) ReadUint16() (uint16, error) {
 	data, err := f.ReadBytes(2)
 	if err != nil {
 		return 0, err
@@ -172,7 +178,7 @@ func (f *ModFSFile) ReadUint16() (uint16, error) {
 	return bin.Uint16(data), nil
 }
 
-func (f *ModFSFile) ReadUint32() (uint32, error) {
+func (f *ModFsFile) ReadUint32() (uint32, error) {
 	data, err := f.ReadBytes(4)
 	if err != nil {
 		return 0, err
@@ -180,7 +186,7 @@ func (f *ModFSFile) ReadUint32() (uint32, error) {
 	return bin.Uint32(data), nil
 }
 
-func (f *ModFSFile) ReadUint64() (uint64, error) {
+func (f *ModFsFile) ReadUint64() (uint64, error) {
 	data, err := f.ReadBytes(8)
 	if err != nil {
 		return 0, err
@@ -188,7 +194,7 @@ func (f *ModFSFile) ReadUint64() (uint64, error) {
 	return bin.Uint64(data), nil
 }
 
-func (f *ModFSFile) ReadFloat32() (float32, error) {
+func (f *ModFsFile) ReadFloat32() (float32, error) {
 	u, err := f.ReadUint32()
 	if err != nil {
 		return 0, err
@@ -196,7 +202,7 @@ func (f *ModFSFile) ReadFloat32() (float32, error) {
 	return math.Float32frombits(u), nil
 }
 
-func (f *ModFSFile) ReadFloat64() (float64, error) {
+func (f *ModFsFile) ReadFloat64() (float64, error) {
 	u, err := f.ReadUint64()
 	if err != nil {
 		return 0, err
@@ -204,7 +210,7 @@ func (f *ModFSFile) ReadFloat64() (float64, error) {
 	return math.Float64frombits(u), nil
 }
 
-func (f *ModFSFile) WriteBytes(d []byte) error {
+func (f *ModFsFile) WriteBytes(d []byte) error {
 	l := len(d)
 	data := make([]byte, max(len(f.Data), f.Cursor+l))
 	copy(data, f.Data)
@@ -214,34 +220,34 @@ func (f *ModFSFile) WriteBytes(d []byte) error {
 	return nil
 }
 
-func (f *ModFSFile) WriteUint8(n uint8) error {
+func (f *ModFsFile) WriteUint8(n uint8) error {
 	data := make([]byte, 1)
 	data[0] = n
 	return f.WriteBytes(data)
 }
 
-func (f *ModFSFile) WriteUint16(n uint16) error {
+func (f *ModFsFile) WriteUint16(n uint16) error {
 	data := make([]byte, 2)
 	bin.PutUint16(data, n)
 	return f.WriteBytes(data)
 }
 
-func (f *ModFSFile) WriteUint32(n uint32) error {
+func (f *ModFsFile) WriteUint32(n uint32) error {
 	data := make([]byte, 4)
 	bin.PutUint32(data, n)
 	return f.WriteBytes(data)
 }
 
-func (f *ModFSFile) WriteUint64(n uint64) error {
+func (f *ModFsFile) WriteUint64(n uint64) error {
 	data := make([]byte, 8)
 	bin.PutUint64(data, n)
 	return f.WriteBytes(data)
 }
 
-func (f *ModFSFile) WriteFloat32(n float32) error {
+func (f *ModFsFile) WriteFloat32(n float32) error {
 	return f.WriteUint32(math.Float32bits(n))
 }
 
-func (f *ModFSFile) WriteFloat64(n float64) error {
+func (f *ModFsFile) WriteFloat64(n float64) error {
 	return f.WriteUint64(math.Float64bits(n))
 }
