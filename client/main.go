@@ -1,6 +1,7 @@
 package main
 
 import (
+	"coop-voicechat/assets"
 	"coop-voicechat/coop"
 	"log"
 
@@ -46,6 +47,7 @@ func main() {
 }
 
 func onReady() {
+	systray.SetIcon(assets.Microphone)
 	systray.SetTitle("coop-voicechat")
 	systray.SetTooltip("coop-voicechat client")
 
