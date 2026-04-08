@@ -106,6 +106,7 @@ function audio_send()
             write_state_to_file(i, states)
 
             local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, fileName, false)
+            mod_fs_file_clear(sendFile)
 
             -- todo: sort the frames just in case :p
             for i = #voiceState.frames, 1, -1 do
