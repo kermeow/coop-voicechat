@@ -84,6 +84,11 @@ func (b *Bridge) disconnect() {
 	}
 	b.Connected = false
 	b.event(BridgeDisconnect)
+
+	for i, s := range b.audio.speakers {
+		s.Abort()
+		delete(b.audio.speakers, i)
+	}
 }
 
 func (b *Bridge) poll() bool {
