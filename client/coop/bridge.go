@@ -25,18 +25,18 @@ type Bridge struct {
 	syncLastRemoteFrame uint32
 	syncTimeoutCounter  uint8
 
-	sendFS *ModFS
-	recvFS *ModFS
+	sendFS *ModFs
+	recvFS *ModFs
 }
 
 func NewBridge(options *config.Config) *Bridge {
-	send_modfs, err := ModFSGet("coop-voicechat-recv")
+	send_modfs, err := ModFsGet("coop-voicechat-recv")
 	if err != nil {
 		panic(err)
 	}
 	send_modfs.Write()
 
-	recv_modfs, err := ModFSGet("coop-voicechat")
+	recv_modfs, err := ModFsGet("coop-voicechat")
 	if err != nil {
 		panic(err)
 	}

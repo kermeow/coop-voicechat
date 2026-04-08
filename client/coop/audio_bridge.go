@@ -37,7 +37,7 @@ type voiceState struct {
 	area  uint8
 }
 
-func (v *voiceState) read(f *ModFSFile) {
+func (v *voiceState) read(f *ModFsFile) {
 	v.volume, _ = f.ReadFloat32()
 	x, _ := f.ReadFloat64()
 	y, _ := f.ReadFloat64()
