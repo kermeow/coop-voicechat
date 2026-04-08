@@ -37,7 +37,10 @@ end
 
 -- checks if new data is available
 local function bridge_poll()
+    mod_fs_hide_errors(true)
+    -- this is the most likely operation to fail
     gVoiceBridge.recvFS = mod_fs_reload(RECV_MOD_FS_NAME)
+    mod_fs_hide_errors(false)
     if not (gVoiceBridge.sendFS and gVoiceBridge.recvFS) then
         return false
     end
