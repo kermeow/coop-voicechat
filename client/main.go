@@ -79,14 +79,7 @@ func onReady() {
 	systray.AddSeparator()
 
 	mPanning := systray.AddMenuItemCheckbox("Stereo Panning", "Hear players to your left and right", options.StereoPanning)
-	mPanning.Click(func() {
-		options.StereoPanning = !options.StereoPanning
-		if options.StereoPanning {
-			mPanning.Check()
-		} else {
-			mPanning.Uncheck()
-		}
-	})
+	mPanning.Click(handleCheckbox(&options.StereoPanning, mPanning))
 
 	systray.AddSeparator()
 
@@ -95,3 +88,14 @@ func onReady() {
 }
 
 func onExit() {}
+
+func handleCheckbox(b *bool, m *systray.MenuItem) func() {
+	return func() {
+		*b = !*b
+		if *b {
+			m.Check()
+		} else {
+			m.Uncheck()
+		}
+	}
+}
