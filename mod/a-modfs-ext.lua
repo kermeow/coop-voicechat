@@ -11,3 +11,10 @@ end
 function mod_fs_file_clear(file)
     return file:rewind() and file:erase(file.size)
 end
+
+if not mod_fs_file_set_compression then
+    -- pr not merged :(
+    function mod_fs_file_set_compression(file, level)
+        return true
+    end
+end

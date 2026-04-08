@@ -16,6 +16,7 @@ do -- bridge_init
     gVoiceBridge.sendFS:clear()
 
     gVoiceBridge.syncFile = gVoiceBridge.sendFS:create_file("sync", false)
+    mod_fs_file_set_compression(gVoiceBridge.syncFile, 0)
     gVoiceBridge.syncLocalFrame = 1
     gVoiceBridge.syncRemoteFrame = 0
     gVoiceBridge.syncRemoteAckFrame = 0

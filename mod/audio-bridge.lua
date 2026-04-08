@@ -91,11 +91,13 @@ end
 function audio_send()
     local localFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "local", false)
     mod_fs_file_clear(localFile)
+    mod_fs_file_set_compression(localFile, 0)
     localFile:write_bytes("smvc local data ")
     write_state_to_file(0, localFile)
 
     local states = mod_fs_get_or_create_file(gVoiceBridge.sendFS, "states", false)
     mod_fs_file_clear(states)
+    mod_fs_file_set_compression(states, 0)
     states:write_bytes("smvc state data ")
 
     for i = 1, MAX_PLAYERS - 1 do
@@ -109,6 +111,7 @@ function audio_send()
 
             local sendFile = mod_fs_get_or_create_file(gVoiceBridge.sendFS, fileName, false)
             mod_fs_file_clear(sendFile)
+            mod_fs_file_set_compression(sendFile, 0)
             sendFile:write_bytes("smvc output data ")
 
             -- todo: sort the frames just in case :p
