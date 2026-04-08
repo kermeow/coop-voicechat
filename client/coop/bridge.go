@@ -11,13 +11,6 @@ const BRIDGE_VERSION uint16 = 1
 const POLL_INTERVAL = 33           // 1/30
 const POLL_INTERVAL_INACTIVE = 100 // 1/10
 
-type BridgeEvent int
-
-const (
-	BridgeConnect BridgeEvent = iota
-	BridgeDisconnect
-)
-
 type Bridge struct {
 	Connected bool
 	Running   bool
