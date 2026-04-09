@@ -2,11 +2,15 @@ package main
 
 import (
 	"coop-voicechat/assets"
-	"coop-voicechat/config"
+	"coop-voicechat/audio"
+	"coop-voicechat/bridge"
 	"coop-voicechat/paths"
 	"log"
+	"time"
 
 	"github.com/energye/systray"
+	"github.com/gopxl/beep/v2"
+	"github.com/gopxl/beep/v2/speaker"
 	"github.com/gordonklaus/portaudio"
 	"github.com/postfinance/single"
 )
@@ -15,7 +19,7 @@ var GitDescribe string = "unknown"
 var GitBranch string = "unknown"
 var GitCommit string = "unknown"
 
-var options *config.Config
+var gVoiceBridge *bridge.Bridge
 
 func main() {
 	log.Printf("coop-voicechat %s (%s@%s)\n", GitDescribe, GitCommit, GitBranch)
@@ -33,18 +37,24 @@ func main() {
 	log.Println("Checking sm64coopdx dirs")
 	paths.EnsureDirs()
 
-	log.Println("Loading options")
-	options, _ = config.Load(paths.VoiceOptions)
-	defer options.Save(paths.VoiceOptions)
-
 	log.Println("Initialize PortAudio")
 	err = portaudio.Initialize()
 	if err != nil {
-		log.Println("Initialize PortAudio failed")
-		log.Println(err)
+		log.Fatalln(err)
 		return
 	}
 	defer portaudio.Terminate()
+
+	log.Println("Initialize speaker")
+	sr := beep.SampleRate(audio.SAMPLE_RATE)
+	speaker.Init(sr, sr.N(50*time.Millisecond))
+	defer speaker.Clear()
+
+	gVoiceBridge = bridge.NewBridge()
+
+	go systray.Run(onReady, onExit)
+
+	gVoiceBridge.Start()
 }
 
 func onReady() {
@@ -63,16 +73,50 @@ func onReady() {
 
 	systray.AddSeparator()
 
-	mPanning := systray.AddMenuItemCheckbox("Stereo Panning", "Hear players to your left and right", options.StereoPanning)
-	mPanning.Click(handleCheckbox(&options.StereoPanning, mPanning))
+	// TODO: allow input device changing
+
+	// mInputDevice := systray.AddMenuItem("Input Device", "Change input device")
+	// mInputDevices := make(map[string]systray.MenuItem)
+
+	// mOutputDevice := systray.AddMenuItem("Output Device", "Change output device")
+	// mOutputDevices := make(map[string]systray.MenuItem)
+
+	// allDevices, _ := portaudio.Devices()
+	// inputDefault, _ := portaudio.DefaultInputDevice()
+	// outputDefault, _ := portaudio.DefaultOutputDevice()
+
+	// for _, device := range allDevices {
+	// 	if device.MaxInputChannels > 0 {
+	// 		mDevice := mInputDevice.AddSubMenuItemCheckbox(device.Name, "", device == inputDefault)
+	// 		mInputDevices[device.Name] = *mDevice
+	// 	}
+	// 	if device.MaxOutputChannels > 0 {
+	// 		mDevice := mOutputDevice.AddSubMenuItemCheckbox(device.Name, "", device == outputDefault)
+	// 		mOutputDevices[device.Name] = *mDevice
+	// 	}
+	// }
 
 	systray.AddSeparator()
 
 	mQuit := systray.AddMenuItem("Quit", "Quit the coop-voicechat client")
 	mQuit.Click(systray.Quit)
+
+	go func() {
+		for e := range gVoiceBridge.Event {
+			switch e {
+			case bridge.BridgeConnect:
+				mStatus.SetTitle("Connected")
+			case bridge.BridgeDisconnect:
+				mStatus.SetTitle("Disconnected")
+			default:
+			}
+		}
+	}()
 }
 
-func onExit() {}
+func onExit() {
+	gVoiceBridge.Stop()
+}
 
 func handleCheckbox(b *bool, m *systray.MenuItem) func() {
 	return func() {
