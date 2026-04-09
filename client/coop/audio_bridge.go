@@ -206,7 +206,7 @@ func (b *audioBridge) recv() {
 	for _, speaker := range b.speakers {
 		difference := speaker.state.pos.Sub(b.localState.pos)
 		distance := difference.Magnitude()
-		speaker.state.attenuation = min(1, 512/float32(distance))
+		speaker.state.attenuation = min(1, 2048/float32(distance))
 
 		if speaker.state.level != b.localState.level {
 			speaker.state.attenuation = 0
