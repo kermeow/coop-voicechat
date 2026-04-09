@@ -3,7 +3,7 @@ package main
 import (
 	"coop-voicechat/assets"
 	"coop-voicechat/config"
-	"coop-voicechat/coop"
+	"coop-voicechat/paths"
 	"log"
 
 	"github.com/energye/systray"
@@ -15,11 +15,11 @@ var GitDescribe string = "unknown"
 var GitBranch string = "unknown"
 var GitCommit string = "unknown"
 
-var bridge *coop.Bridge
 var options *config.Config
 
 func main() {
 	log.Printf("coop-voicechat %s (%s@%s)\n", GitDescribe, GitCommit, GitBranch)
+	defer log.Println("Bye bye!")
 
 	one, err := single.New("coop-voicechat")
 	if err != nil {
@@ -30,9 +30,12 @@ func main() {
 	}
 	defer one.Unlock()
 
-	log.Println("Reading options")
-	options, _ = config.Load(coop.VoiceOptions)
-	defer options.Save(coop.VoiceOptions)
+	log.Println("Checking sm64coopdx dirs")
+	paths.EnsureDirs()
+
+	log.Println("Loading options")
+	options, _ = config.Load(paths.VoiceOptions)
+	defer options.Save(paths.VoiceOptions)
 
 	log.Println("Initialize PortAudio")
 	err = portaudio.Initialize()
@@ -42,16 +45,6 @@ func main() {
 		return
 	}
 	defer portaudio.Terminate()
-
-	log.Println("Checking sm64coopdx dirs")
-	coop.EnsureDirs()
-
-	bridge = coop.NewBridge(options)
-	go bridge.Start()
-	defer bridge.Stop()
-
-	systray.Run(onReady, onExit)
-	log.Println("Bye bye!")
 }
 
 func onReady() {
@@ -67,16 +60,6 @@ func onReady() {
 
 	mStatus := systray.AddMenuItem("Disconnected", "Current bridge status")
 	mStatus.Disable()
-	go func() {
-		for bridge.Running {
-			switch e := <-bridge.Event; e {
-			case coop.BridgeConnect:
-				mStatus.SetTitle("Connected")
-			case coop.BridgeDisconnect:
-				mStatus.SetTitle("Disconnected")
-			}
-		}
-	}()
 
 	systray.AddSeparator()
 
