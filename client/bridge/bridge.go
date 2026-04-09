@@ -1,7 +1,6 @@
 package bridge
 
 import (
-	"coop-voicechat/config"
 	"coop-voicechat/modfs"
 	"log"
 	"time"
@@ -15,7 +14,6 @@ const POLL_INTERVAL_INACTIVE = 100 // 1/10
 type Bridge struct {
 	Running   bool
 	Connected bool
-	Options   *config.Config
 
 	SendFs *modfs.ModFs
 	RecvFs *modfs.ModFs
@@ -29,7 +27,7 @@ type Bridge struct {
 	syncTimeoutCounter  uint8
 }
 
-func NewBridge(options *config.Config) *Bridge {
+func NewBridge() *Bridge {
 	send_modfs, err := modfs.Get("coop-voicechat-recv")
 	if err != nil {
 		panic(err)
@@ -45,7 +43,6 @@ func NewBridge(options *config.Config) *Bridge {
 	return &Bridge{
 		Running:   false,
 		Connected: false,
-		Options:   options,
 
 		SendFs: send_modfs,
 		RecvFs: recv_modfs,
