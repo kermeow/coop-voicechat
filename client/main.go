@@ -37,7 +37,9 @@ func main() {
 	log.Println("Initialize PortAudio")
 	err = portaudio.Initialize()
 	if err != nil {
-		panic(err)
+		log.Println("Initialize PortAudio failed")
+		log.Println(err)
+		return
 	}
 	defer portaudio.Terminate()
 
