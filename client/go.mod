@@ -18,6 +18,6 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 )
 
-replace github.com/gordonklaus/portaudio => github.com/kermeow/static-portaudio v0.0.0
+replace github.com/gordonklaus/portaudio => github.com/kermeow/static-portaudio v0.0.1
 
 replace github.com/hraban/opus => github.com/kermeow/static-opus v0.0.3

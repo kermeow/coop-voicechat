@@ -1,8 +1,9 @@
-package coop
+package modfs
 
 import (
 	"archive/zip"
 	"bytes"
+	"coop-voicechat/paths"
 	"encoding/binary"
 	"encoding/json"
 	"io"
@@ -28,9 +29,9 @@ type ModFsProperties struct {
 	IsPublic bool `json:"isPublic"`
 }
 
-func ModFsGet(modPath string) (*ModFs, error) {
+func Get(modPath string) (*ModFs, error) {
 	m := &ModFs{
-		path:  path.Join(SavDir, modPath+".modfs"),
+		path:  path.Join(paths.SavDir, modPath+".modfs"),
 		files: make(map[string]*ModFsFile),
 	}
 	return m, nil

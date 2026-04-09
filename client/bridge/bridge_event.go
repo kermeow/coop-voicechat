@@ -1,4 +1,4 @@
-package coop
+package bridge
 
 type BridgeEvent int
 
