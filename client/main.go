@@ -93,31 +93,6 @@ func onReady() {
 
 	// TODO: allow input device changing
 
-	mInputDevice := systray.AddMenuItem("Input Device", "Change input device (not implemented)")
-	mInputDevice.Disable()
-	// mInputDevices := make(map[string]systray.MenuItem)
-
-	mOutputDevice := systray.AddMenuItem("Output Device", "Change output device (not implemented)")
-	mOutputDevice.Disable()
-	// mOutputDevices := make(map[string]systray.MenuItem)
-
-	// allDevices, _ := portaudio.Devices()
-	// inputDefault, _ := portaudio.DefaultInputDevice()
-	// outputDefault, _ := portaudio.DefaultOutputDevice()
-
-	// for _, device := range allDevices {
-	// 	if device.MaxInputChannels > 0 {
-	// 		mDevice := mInputDevice.AddSubMenuItemCheckbox(device.Name, "", device == inputDefault)
-	// 		mInputDevices[device.Name] = *mDevice
-	// 	}
-	// 	if device.MaxOutputChannels > 0 {
-	// 		mDevice := mOutputDevice.AddSubMenuItemCheckbox(device.Name, "", device == outputDefault)
-	// 		mOutputDevices[device.Name] = *mDevice
-	// 	}
-	// }
-
-	systray.AddSeparator()
-
 	mQuit := systray.AddMenuItem("Quit", "Quit the coop-voicechat client")
 	mQuit.Click(systray.Quit)
 
@@ -126,10 +101,10 @@ func onReady() {
 			switch e {
 			case bridge.BridgeConnect:
 				mStatus.SetTitle("Connected")
-				mStatus.SetIcon(assets.Connected)
+				systray.SetIcon(assets.Connected)
 			case bridge.BridgeDisconnect:
 				mStatus.SetTitle("Disconnected")
-				mStatus.SetIcon(assets.Disconnected)
+				systray.SetIcon(assets.Disconnected)
 			default:
 			}
 		}
