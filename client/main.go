@@ -7,6 +7,8 @@ import (
 	"coop-voicechat/bridge"
 	"coop-voicechat/paths"
 	"log"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/energye/systray"
@@ -54,6 +56,18 @@ func main() {
 	gVoiceBridge = bridge.NewBridge()
 
 	ctx, cancel := context.WithCancel(context.Background())
+
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan)
+	go func() {
+		for sig := range sigChan {
+			switch sig {
+			case os.Interrupt, os.Kill:
+				log.Println(sig.String(), "received")
+				cancel()
+			}
+		}
+	}()
 
 	go gVoiceBridge.Run(ctx)
 	go systray.Run(onReady, cancel)
