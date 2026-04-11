@@ -1,6 +1,6 @@
 module coop-voicechat
 
-go 1.26.1
+go 1.26.2
 
 require (
 	github.com/energye/systray v1.0.3
@@ -19,6 +19,6 @@ require (
 	golang.org/x/sys v0.25.0 // indirect
 )
 
-replace github.com/gordonklaus/portaudio => github.com/kermeow/static-portaudio v0.0.1
+replace github.com/gordonklaus/portaudio => github.com/kermeow/static-portaudio v0.0.2
 
-replace github.com/hraban/opus => github.com/kermeow/static-opus v0.0.3
+replace github.com/hraban/opus => github.com/kermeow/static-opus v0.0.5
