@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"coop-voicechat/audio"
 	"coop-voicechat/modfs"
 	"log"
 	"time"
@@ -18,6 +19,8 @@ type Bridge struct {
 	RecvFs *modfs.ModFs
 
 	Event chan BridgeEvent
+
+	audio *audio.AudioBridge
 
 	updTicker *time.Ticker
 	stopChan  chan bool
@@ -50,6 +53,8 @@ func NewBridge() *Bridge {
 
 		Event: make(chan BridgeEvent),
 
+		audio: audio.NewAudioBridge(),
+
 		updTicker: time.NewTicker(time.Millisecond * UPDATE_INTERVAL),
 
 		syncLocalFrame:      1,
@@ -62,6 +67,8 @@ func NewBridge() *Bridge {
 
 func (b *Bridge) Run(ctx context.Context) {
 	log.Println("Bridge running")
+
+	go b.audio.Run(ctx)
 
 running:
 	for {
