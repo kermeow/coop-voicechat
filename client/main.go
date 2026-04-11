@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"coop-voicechat/assets"
 	"coop-voicechat/audio"
 	"coop-voicechat/bridge"
@@ -34,6 +35,8 @@ func main() {
 	}
 	defer one.Unlock()
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	log.Println("Checking sm64coopdx dirs")
 	paths.EnsureDirs()
 
@@ -52,9 +55,10 @@ func main() {
 
 	gVoiceBridge = bridge.NewBridge()
 
-	go systray.Run(onReady, onExit)
-
-	gVoiceBridge.Start()
+	go gVoiceBridge.Run(ctx)
+	
+	systray.Run(onReady, onExit)
+	cancel()
 }
 
 func onReady() {
@@ -115,7 +119,6 @@ func onReady() {
 }
 
 func onExit() {
-	gVoiceBridge.Stop()
 }
 
 func handleCheckbox(b *bool, m *systray.MenuItem) func() {
