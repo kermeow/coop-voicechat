@@ -4,5 +4,5 @@ package assets
 
 import _ "embed"
 
-//go:embed microphone.png
-var Microphone []byte
+//go:embed connected.ico
+var Connected []byte
