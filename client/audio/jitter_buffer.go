@@ -83,7 +83,7 @@ type JitterBuffer struct {
 	subwindowSize int
 }
 
-func MakeJitterBuffer[T any]() *JitterBuffer {
+func MakeJitterBuffer() *JitterBuffer {
 	b := &JitterBuffer{
 		ptrTimestamp: 0,
 		nextStop:     0,
