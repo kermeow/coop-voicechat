@@ -16,6 +16,8 @@ var bin binary.ByteOrder = binary.LittleEndian
 
 // THIS IS AN INCOMPLETE IMPLEMENTATION __BY DESIGN__
 
+var cache map[string]*ModFs
+
 type ModFs struct {
 	path  string
 	files map[string]*ModFsFile
@@ -30,10 +32,15 @@ type ModFsProperties struct {
 }
 
 func Get(modPath string) (*ModFs, error) {
-	m := &ModFs{
+	m := cache[modPath]
+	if m != nil {
+		return m, nil
+	}
+	m = &ModFs{
 		path:  path.Join(paths.SavDir, modPath+".modfs"),
 		files: make(map[string]*ModFsFile),
 	}
+	cache[modPath] = m
 	return m, nil
 }
 
