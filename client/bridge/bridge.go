@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"context"
 	"coop-voicechat/modfs"
 	"log"
 	"time"
@@ -8,17 +9,18 @@ import (
 
 const BRIDGE_VERSION uint16 = 1
 
-const POLL_INTERVAL = 33           // 1/30
-const POLL_INTERVAL_INACTIVE = 100 // 1/10
+const UPDATE_INTERVAL = 33 // 1/30
 
 type Bridge struct {
-	Running   bool
 	Connected bool
 
 	SendFs *modfs.ModFs
 	RecvFs *modfs.ModFs
 
 	Event chan BridgeEvent
+
+	updTicker *time.Ticker
+	stopChan  chan bool
 
 	syncLocalFrame      uint32
 	syncRemoteFrame     uint32
@@ -41,13 +43,14 @@ func NewBridge() *Bridge {
 	recv_modfs.Write()
 
 	return &Bridge{
-		Running:   false,
 		Connected: false,
 
 		SendFs: send_modfs,
 		RecvFs: recv_modfs,
 
 		Event: make(chan BridgeEvent),
+
+		updTicker: time.NewTicker(time.Millisecond * UPDATE_INTERVAL),
 
 		syncLocalFrame:      1,
 		syncRemoteFrame:     0,
@@ -57,34 +60,25 @@ func NewBridge() *Bridge {
 	}
 }
 
-func (b *Bridge) Start() {
-	if b.Running {
-		return
-	}
-
+func (b *Bridge) Run(ctx context.Context) {
 	log.Println("Bridge running")
 
-	b.Running = true
-
-	for b.Running {
-		b.update()
-
-		interval := POLL_INTERVAL * time.Millisecond
-		if !b.Connected {
-			interval = POLL_INTERVAL_INACTIVE * time.Millisecond
+running:
+	for {
+		select {
+		case <-b.updTicker.C:
+			b.update()
+		case <-ctx.Done():
+			b.stop()
+			break running
 		}
-		time.Sleep(interval)
 	}
 }
 
-func (b *Bridge) Stop() {
-	if !b.Running {
-		return
-	}
-
+func (b *Bridge) stop() {
 	log.Println("Bridge stopping")
 
-	b.Running = false
+	b.updTicker.Stop()
 	b.disconnect()
 }
 
