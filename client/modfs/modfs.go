@@ -16,7 +16,7 @@ var bin binary.ByteOrder = binary.LittleEndian
 
 // THIS IS AN INCOMPLETE IMPLEMENTATION __BY DESIGN__
 
-var cache map[string]*ModFs
+var cache map[string]*ModFs = make(map[string]*ModFs)
 
 type ModFs struct {
 	path  string
