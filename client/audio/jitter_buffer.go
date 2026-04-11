@@ -85,6 +85,7 @@ type JitterBuffer struct {
 
 func NewJitterBuffer() *JitterBuffer {
 	b := &JitterBuffer{
+		packets:      [JITTER_MAX_BUFFER_SIZE]*JitterPacket{},
 		ptrTimestamp: 0,
 		nextStop:     0,
 		lastReturned: 0,
@@ -104,9 +105,11 @@ func NewJitterBuffer() *JitterBuffer {
 
 func (b *JitterBuffer) reset() {
 	for i := 0; i < JITTER_MAX_BUFFER_SIZE; i++ {
-		p := b.packets[i]
-		if p.Data != nil {
-			p.Data = nil
+		b.packets[i] = &JitterPacket{
+			Data:      nil,
+			Timestamp: 0,
+			Span:      0,
+			Arrival:   0,
 		}
 	}
 

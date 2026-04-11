@@ -5,6 +5,8 @@ import "github.com/quartercastle/vector"
 type vec = vector.Vector
 
 type Player struct {
+	LocalIndex uint8
+
 	HeadPosition vec
 
 	CurrentLevel uint8
