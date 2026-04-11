@@ -35,8 +35,6 @@ func main() {
 	}
 	defer one.Unlock()
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	log.Println("Checking sm64coopdx dirs")
 	paths.EnsureDirs()
 
@@ -55,10 +53,12 @@ func main() {
 
 	gVoiceBridge = bridge.NewBridge()
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	go gVoiceBridge.Run(ctx)
-	
-	systray.Run(onReady, onExit)
-	cancel()
+	go systray.Run(onReady, cancel)
+
+	<-ctx.Done()
 }
 
 func onReady() {
@@ -116,9 +116,6 @@ func onReady() {
 			}
 		}
 	}()
-}
-
-func onExit() {
 }
 
 func handleCheckbox(b *bool, m *systray.MenuItem) func() {
