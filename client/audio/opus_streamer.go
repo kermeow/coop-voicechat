@@ -1,5 +1,7 @@
 package audio
 
+import "math"
+
 type OpusStreamer struct {
 	jitter   *JitterBuffer
 	decoder  *OpusDecoder
@@ -58,7 +60,7 @@ func (s *OpusStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 	}
 
 	for i, sample := range opusSamples {
-		f64 := float64(sample)
+		f64 := math.Tanh(float64(sample)) // soft clip
 		samples[i][0] = f64
 		samples[i][1] = f64
 	}
