@@ -93,10 +93,12 @@ func onReady() {
 
 	// TODO: allow input device changing
 
-	// mInputDevice := systray.AddMenuItem("Input Device", "Change input device")
+	mInputDevice := systray.AddMenuItem("Input Device", "Change input device (not implemented)")
+	mInputDevice.Disable()
 	// mInputDevices := make(map[string]systray.MenuItem)
 
-	// mOutputDevice := systray.AddMenuItem("Output Device", "Change output device")
+	mOutputDevice := systray.AddMenuItem("Output Device", "Change output device (not implemented)")
+	mOutputDevice.Disable()
 	// mOutputDevices := make(map[string]systray.MenuItem)
 
 	// allDevices, _ := portaudio.Devices()
