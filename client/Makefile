@@ -4,8 +4,8 @@ GIT_DESCRIBE != git describe --always
 GIT_BRANCH != git branch --show-current
 GIT_COMMIT != git rev-parse --short=7 HEAD
 
-GOOS ?= 
-GOARCH ?= amd64
+# GOOS ?= 
+# GOARCH ?= amd64
 
 GOTAGS ?=
 
