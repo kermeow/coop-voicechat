@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const BRIDGE_VERSION uint16 = 1
+const BRIDGE_VERSION uint16 = 2
 
 const UPDATE_INTERVAL = 33 // 1/30
 
@@ -63,6 +63,22 @@ func NewBridge() *Bridge {
 		syncLastRemoteFrame: 0,
 		syncTimeoutCounter:  0,
 	}
+}
+
+func (b *Bridge) connect() {
+	if b.Connected {
+		return
+	}
+	b.Connected = true
+	b.Event <- BridgeConnect
+}
+
+func (b *Bridge) disconnect() {
+	if !b.Connected {
+		return
+	}
+	b.Connected = false
+	b.Event <- BridgeDisconnect
 }
 
 func (b *Bridge) Run(ctx context.Context) {

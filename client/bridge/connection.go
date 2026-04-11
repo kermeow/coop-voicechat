@@ -2,22 +2,6 @@ package bridge
 
 import "log"
 
-func (b *Bridge) connect() {
-	if b.Connected {
-		return
-	}
-	b.Connected = true
-	b.Event <- BridgeConnect
-}
-
-func (b *Bridge) disconnect() {
-	if !b.Connected {
-		return
-	}
-	b.Connected = false
-	b.Event <- BridgeDisconnect
-}
-
 func (b *Bridge) poll() bool {
 	b.RecvFs.Read(false)
 
