@@ -62,7 +62,7 @@ func main() {
 }
 
 func onReady() {
-	systray.SetIcon(assets.Microphone)
+	systray.SetIcon(assets.Disconnected)
 	systray.SetTitle("coop-voicechat")
 	systray.SetTooltip("coop-voicechat client")
 
@@ -110,8 +110,10 @@ func onReady() {
 			switch e {
 			case bridge.BridgeConnect:
 				mStatus.SetTitle("Connected")
+				mStatus.SetIcon(assets.Connected)
 			case bridge.BridgeDisconnect:
 				mStatus.SetTitle("Disconnected")
+				mStatus.SetIcon(assets.Disconnected)
 			default:
 			}
 		}
