@@ -13,8 +13,8 @@ import (
 const MAX_INPUT_FRAMES = 100
 
 type frame struct {
-	timestamp int
 	syncFrame uint32
+	timestamp int
 	data      []byte
 }
 
@@ -36,6 +36,7 @@ func NewAudioBridge(b *Bridge) *AudioBridge {
 
 		paInBuffer:  make([]float32, audio.OPUS_FRAME_SAMPLES),
 		inTimestamp: 0,
+		inQueue:     make([]*frame, 0),
 		opusEncoder: audio.NewOpusEncoder(),
 	}
 	paInStream, _ := portaudio.OpenDefaultStream(1, 0, audio.SAMPLE_RATE, audio.OPUS_FRAME_SAMPLES, a.paInBuffer)
@@ -64,8 +65,8 @@ func (a *AudioBridge) encodeNext() {
 	}
 
 	f := &frame{
-		timestamp: timestamp,
 		syncFrame: 0,
+		timestamp: timestamp,
 		data:      data,
 	}
 	i := max(0, len(a.inQueue)-(MAX_INPUT_FRAMES-1))
