@@ -1,28 +1,28 @@
-local BRIDGE_VERSION = 1
+local BRIDGE_VERSION = 2
 local last_version_warning = 0
 
 local RECV_MOD_FS_NAME = "coop-voicechat-recv"
+local FILE_HEADER = "smvc"
 
-do -- bridge_init
-    -- mod_fs_hide_errors(true)
+-- mod_fs_hide_errors(true)
 
-    gVoiceBridge = {}
+gVoiceBridge = {}
 
-    gVoiceBridge.connected = false
+gVoiceBridge.connected = false
 
-    gVoiceBridge.sendFS = mod_fs_get()
-    gVoiceBridge.recvFS = mod_fs_get(RECV_MOD_FS_NAME)
+gVoiceBridge.sendFs = mod_fs_get()
+gVoiceBridge.recvFs = mod_fs_get(RECV_MOD_FS_NAME)
 
-    gVoiceBridge.sendFS:clear()
+gVoiceBridge.sendFs:clear()
 
-    gVoiceBridge.syncFile = gVoiceBridge.sendFS:create_file("sync", false)
-    mod_fs_file_set_compression(gVoiceBridge.syncFile, 0)
-    gVoiceBridge.syncLocalFrame = 1
-    gVoiceBridge.syncRemoteFrame = 0
-    gVoiceBridge.syncRemoteAckFrame = 0
-    gVoiceBridge.syncLastRemoteFrame = 0
-    gVoiceBridge.syncTimeoutCounter = 0
-end
+gVoiceBridge.syncFile = gVoiceBridge.sendFs:create_file("sync", false)
+mod_fs_file_set_compression(gVoiceBridge.syncFile, 0)
+
+gVoiceBridge.syncLocalFrame = 1
+gVoiceBridge.syncRemoteFrame = 0
+gVoiceBridge.syncRemoteAckFrame = 0
+gVoiceBridge.syncLastRemoteFrame = 0
+gVoiceBridge.syncTimeoutCounter = 0
 
 local function bridge_connect()
     gVoiceBridge.connected = true
@@ -40,13 +40,13 @@ end
 local function bridge_poll()
     mod_fs_hide_errors(true)
     -- this is the most likely operation to fail
-    gVoiceBridge.recvFS = mod_fs_reload(RECV_MOD_FS_NAME)
+    gVoiceBridge.recvFs = mod_fs_reload(RECV_MOD_FS_NAME)
     mod_fs_hide_errors(false)
-    if not (gVoiceBridge.sendFS and gVoiceBridge.recvFS) then
+    if not (gVoiceBridge.sendFs and gVoiceBridge.recvFs) then
         return false
     end
 
-    local syncFile = gVoiceBridge.recvFS:get_file("sync")
+    local syncFile = gVoiceBridge.recvFs:get_file("sync")
     if not syncFile then
         return false
     end
@@ -109,6 +109,29 @@ end
 
 -- sends new data
 local function bridge_send()
+    local f = mod_fs_get_or_create_file(gVoiceBridge.sendFs, "local_player", false)
+    mod_fs_file_clear(f)
+    f:write_bytes(FILE_HEADER)
+
+    mod_fs_file_write_player(f, 0)
+
+    f = mod_fs_get_or_create_file(gVoiceBridge.sendFs, "players", false)
+    mod_fs_file_clear(f)
+    f:write_bytes(FILE_HEADER)
+
+    for i = 1, MAX_PLAYERS - 1 do
+        local lVoiceState = gVoiceStates[i]
+        local lNetworkPlayer = gNetworkPlayers[i]
+        if lNetworkPlayer.connected then
+            f:write_integer(i | 0x80, INT_TYPE_U8)
+            f:write_integer(#lVoiceState.audioFile, INT_TYPE_U8)
+            f:write_bytes(lVoiceState.audioFile)
+            mod_fs_file_write_player(f, i)
+        else
+            f:write_integer(i, INT_TYPE_U8)
+        end
+    end
+
     audio_send()
 end
 
@@ -123,7 +146,7 @@ local function bridge_update()
     gVoiceBridge.syncFile:write_integer(gVoiceBridge.syncLocalFrame, INT_TYPE_U32)
     gVoiceBridge.syncFile:write_integer(gVoiceBridge.syncRemoteFrame, INT_TYPE_U32)
 
-    gVoiceBridge.sendFS:save()
+    gVoiceBridge.sendFs:save()
 end
 
 hook_event(HOOK_UPDATE, bridge_update)
