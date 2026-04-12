@@ -52,12 +52,15 @@ func NewBridge() *Bridge {
 
 	b := &Bridge{
 		Connected: false,
+		Players: make(map[uint8]*coop.Player),
 
 		SendFs: send_modfs,
 		RecvFs: recv_modfs,
 
 		Event: make(chan BridgeEvent),
 
+		audioFiles: make(map[uint8]string),
+		
 		updTicker: time.NewTicker(time.Millisecond * UPDATE_INTERVAL),
 
 		syncLocalFrame:      1,
