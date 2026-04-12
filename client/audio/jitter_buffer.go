@@ -74,6 +74,10 @@ func (j *JitterBuffer) Pop() (*JitterPacket, error) {
 		}
 	}
 
+	if packet == nil {
+		return nil, ErrJitterUnderrun
+	}
+
 	if packet.Timestamp > j.playoutHead {
 		j.playoutHead = packet.Timestamp
 		return nil, ErrJitterMissing
