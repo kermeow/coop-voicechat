@@ -27,6 +27,10 @@ func NewPlayerStreamer(player *coop.Player) *PlayerStreamer {
 	return s
 }
 
+func (s *PlayerStreamer) Put(data []byte, timestamp int) {
+	s.streamer.Put(data, timestamp)
+}
+
 func (s *PlayerStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 	if s.Player.LocalIndex < 1 {
 		return 0, true // stops streaming
