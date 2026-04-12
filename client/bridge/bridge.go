@@ -52,7 +52,7 @@ func NewBridge() *Bridge {
 
 	b := &Bridge{
 		Connected: false,
-		Players: make(map[uint8]*coop.Player),
+		Players:   make(map[uint8]*coop.Player),
 
 		SendFs: send_modfs,
 		RecvFs: recv_modfs,
@@ -60,7 +60,7 @@ func NewBridge() *Bridge {
 		Event: make(chan BridgeEvent),
 
 		audioFiles: make(map[uint8]string),
-		
+
 		updTicker: time.NewTicker(time.Millisecond * UPDATE_INTERVAL),
 
 		syncLocalFrame:      1,
@@ -153,7 +153,8 @@ func (b *Bridge) recv() {
 	}
 
 	f.Cursor = 4 // skip header
-	f.ReadPlayer(coop.LocalPlayer)
+	coop.LocalPlayer.LastState = coop.LocalPlayer.State
+	f.ReadPlayer(&coop.LocalPlayer.State)
 
 	f, err = b.RecvFs.Get("players")
 	if err != nil {
@@ -179,7 +180,8 @@ func (b *Bridge) recv() {
 			l, _ := f.ReadUint8()
 			sb, _ := f.ReadBytes(int(l))
 
-			f.ReadPlayer(p)
+			p.LastState = p.State
+			f.ReadPlayer(&p.State)
 
 			b.Players[id] = p
 			b.audioFiles[id] = string(sb)
@@ -188,7 +190,7 @@ func (b *Bridge) recv() {
 		} else {
 			f.Cursor++
 			f.Cursor += len(b.audioFiles[id])
-			f.ReadPlayer(p)
+			f.ReadPlayer(&p.State)
 		}
 	}
 

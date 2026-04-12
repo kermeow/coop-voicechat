@@ -7,6 +7,11 @@ type vec = vector.Vector
 type Player struct {
 	LocalIndex uint8
 
+	State     PlayerState
+	LastState PlayerState
+}
+
+type PlayerState struct {
 	HeadPosition vec
 
 	CurrentLevel uint16

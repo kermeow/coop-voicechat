@@ -22,7 +22,7 @@ func (f *ModFsFile) ReadVec(n int) (vec, error) {
 	return v, nil
 }
 
-func (f *ModFsFile) ReadPlayer(p *coop.Player) error {
+func (f *ModFsFile) ReadPlayer(p *coop.PlayerState) error {
 	pos, _ := f.ReadVec(3)
 
 	level, _ := f.ReadUint16()

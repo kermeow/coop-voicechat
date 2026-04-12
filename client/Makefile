@@ -75,7 +75,6 @@ OUTPATH := $(OUTDIR)/$(OUTFILE)
 client:
 	mkdir -p $(OUTDIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 CGO_CFLAGS="$(CFLAGS)" CC=$(CROSS)$(CC) go build -v -o=$(OUTPATH) -ldflags="$(LDFLAGS)" -tags=$(GOTAGS)
-	$(CROSS)$(STRIP) -s $(OUTPATH)
 
 clean:
 	rm -rf $(OUTDIR)
