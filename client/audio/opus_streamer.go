@@ -1,6 +1,8 @@
 package audio
 
-import "math"
+import (
+	"math"
+)
 
 type OpusStreamer struct {
 	jitter   *JitterBuffer
@@ -17,11 +19,10 @@ func NewOpusStreamer() *OpusStreamer {
 	return s
 }
 
-func (s *OpusStreamer) Put(packet []byte, timestamp int) {
-	s.jitter.Put(&JitterPacket{
+func (s *OpusStreamer) Push(packet []byte, timestamp int) {
+	s.jitter.Push(&JitterPacket{
 		Data:      packet,
 		Timestamp: timestamp,
-		Span:      OPUS_FRAME_SAMPLES,
 	})
 }
 
@@ -33,27 +34,21 @@ func (s *OpusStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 	s.leftover = make([]float32, 0)
 
 	for filled < nSamples {
-		packet := &JitterPacket{}
-		offset := 0
-		j := s.jitter.Get(packet, nSamples-filled, &offset)
+		packet, _ := s.jitter.Pop()
 
 		var dec []float32
-		switch j {
-		case JitterOk:
+		if packet != nil {
 			dec, s.err = s.decoder.Decode(packet.Data)
 			if s.err != nil {
 				return filled, false
 			}
-		default:
+		} else {
 			dec, s.err = s.decoder.DecodePLC(OPUS_FRAME_SAMPLES)
-			if packet.Span < OPUS_FRAME_SAMPLES {
-				dec = dec[:packet.Span]
-			}
 			if s.err != nil {
 				return filled, false
 			}
 		}
-		copied := copy(opusSamples[filled:], dec[offset:])
+		copied := copy(opusSamples[filled:], dec)
 		if copied < len(dec) {
 			s.leftover = make([]float32, len(dec)-copied)
 			copy(s.leftover, dec[copied:])

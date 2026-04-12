@@ -27,8 +27,8 @@ func NewPlayerStreamer(player *coop.Player) *PlayerStreamer {
 	return s
 }
 
-func (s *PlayerStreamer) Put(data []byte, timestamp int) {
-	s.streamer.Put(data, timestamp)
+func (s *PlayerStreamer) Push(data []byte, timestamp int) {
+	s.streamer.Push(data, timestamp)
 }
 
 func (s *PlayerStreamer) Stream(samples [][2]float64) (n int, ok bool) {
