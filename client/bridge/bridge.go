@@ -24,7 +24,8 @@ type Bridge struct {
 
 	Event chan BridgeEvent
 
-	audio *AudioBridge
+	audio      *AudioBridge
+	audioFiles map[uint8]string
 
 	updTicker *time.Ticker
 	stopChan  chan bool
@@ -69,6 +70,17 @@ func NewBridge() *Bridge {
 	return b
 }
 
+func (b *Bridge) removePlayer(localIndex uint8) {
+	p := b.Players[localIndex]
+	if p == nil {
+		return
+	}
+	b.audio.removePlayer(localIndex)
+	delete(b.Players, localIndex)
+	delete(b.audioFiles, localIndex)
+	log.Println("Player", localIndex, "removed")
+}
+
 func (b *Bridge) connect() {
 	if b.Connected {
 		return
@@ -86,11 +98,10 @@ func (b *Bridge) disconnect() {
 	b.Connected = false
 	b.Event <- BridgeDisconnect
 
-	b.audio.disconnect()
-
 	for i := range b.Players {
-		delete(b.Players, i)
+		b.removePlayer(i)
 	}
+	b.audio.disconnect()
 }
 
 func (b *Bridge) Run(ctx context.Context) {
@@ -132,6 +143,51 @@ func (b *Bridge) update() {
 }
 
 func (b *Bridge) recv() {
+	f, err := b.RecvFs.Get("local_player")
+	if err != nil {
+		return
+	}
+
+	f.Cursor = 4 // skip header
+	f.ReadPlayer(coop.LocalPlayer)
+
+	f, err = b.RecvFs.Get("players")
+	if err != nil {
+		return
+	}
+
+	f.Cursor = 4 // skip header
+	for f.Cursor < len(f.Data) {
+		n, _ := f.ReadUint8()
+		id, connected := n&0x7f, n&0x80 > 0
+		p := b.Players[id]
+
+		if !connected {
+			if p != nil {
+				b.removePlayer(id)
+			}
+			continue
+		} else if p == nil {
+			p = &coop.Player{
+				LocalIndex: id,
+			}
+
+			l, _ := f.ReadUint8()
+			sb, _ := f.ReadBytes(int(l))
+
+			f.ReadPlayer(p)
+
+			b.Players[id] = p
+			b.audioFiles[id] = string(sb)
+			b.audio.addPlayer(p)
+			log.Println("Player", id, "added")
+		} else {
+			f.Cursor++
+			f.Cursor += len(b.audioFiles[id])
+			f.ReadPlayer(p)
+		}
+	}
+
 	b.audio.recv()
 }
 
