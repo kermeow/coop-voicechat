@@ -9,6 +9,9 @@ import (
 )
 
 const BRIDGE_VERSION uint16 = 2
+const FILE_HEADER = "smvc"
+
+var FILE_HEADER_BYTES = []byte(FILE_HEADER) // cant be const because go bruh
 
 const UPDATE_INTERVAL = 33 // 1/30
 
@@ -129,7 +132,9 @@ func (b *Bridge) update() {
 }
 
 func (b *Bridge) recv() {
+	b.audio.recv()
 }
 
 func (b *Bridge) send() {
+	b.audio.send()
 }
