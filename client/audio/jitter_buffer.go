@@ -2,6 +2,7 @@ package audio
 
 import (
 	"errors"
+	"log"
 	"sync"
 )
 
@@ -39,14 +40,11 @@ func (j *JitterBuffer) Push(packet *JitterPacket) {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	if j.playoutHead < 0 {
-		j.playoutHead = packet.Timestamp
-	}
-
 	i := max(0, len(j.packets)-(JITTER_BUFFER_MAX-1))
 	j.packets = append(j.packets[i:], packet)
 
-	if len(j.packets) >= JITTER_BUFFER_MIN {
+	if len(j.packets) > JITTER_BUFFER_MIN && j.buffering {
+		j.playoutHead = j.packets[0].Timestamp
 		j.buffering = false
 	}
 }
@@ -63,14 +61,12 @@ func (j *JitterBuffer) Pop() (*JitterPacket, error) {
 		return nil, ErrJitterUnderrun
 	}
 
-	var packet *JitterPacket
+	var packet *JitterPacket = j.packets[0]
 
 	for _, p := range j.packets {
-		if p.Timestamp >= j.playoutHead && (packet == nil || p.Timestamp < packet.Timestamp) {
+		if p.Timestamp == j.playoutHead {
 			packet = p
-			if p.Timestamp == j.playoutHead {
-				break
-			}
+			break
 		}
 	}
 
@@ -84,6 +80,8 @@ func (j *JitterBuffer) Pop() (*JitterPacket, error) {
 	}
 
 	j.playoutHead++
+
+	log.Printf("playout head is %d frames behind", j.packets[len(j.packets)-1].Timestamp-j.playoutHead)
 
 	return packet, nil
 }

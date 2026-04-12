@@ -31,7 +31,7 @@ func (s *OpusStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 
 	opusSamples := make([]float32, len(samples))
 	filled := copy(opusSamples, s.leftover)
-	s.leftover = make([]float32, 0)
+	s.leftover = s.leftover[filled:]
 
 	for filled < nSamples {
 		packet, _ := s.jitter.Pop()
@@ -48,6 +48,7 @@ func (s *OpusStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 				return filled, false
 			}
 		}
+
 		copied := copy(opusSamples[filled:], dec)
 		if copied < len(dec) {
 			s.leftover = make([]float32, len(dec)-copied)
