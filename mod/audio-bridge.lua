@@ -12,7 +12,7 @@ for i = 0, MAX_PLAYERS - 1 do
         audioFrames = {},
 
         volume = 1,
-        speakVol = -1
+        loudness = -1
     }
 end
 
@@ -42,6 +42,7 @@ local function recv_audio_packet(packet)
 end
 
 function audio_recv()
+    -- get audio data from client
     local stream = gVoiceBridge.recvFs:get_file("stream")
     if not stream then
         return
@@ -50,7 +51,6 @@ function audio_recv()
     stream:seek(4, FILE_SEEK_SET) -- skip file header
 
     local packet = ""
-
     ::read::
     while not stream:is_eof() do
         local syncFrame = stream:read_integer(INT_TYPE_U32)
@@ -77,11 +77,26 @@ function audio_recv()
     if #packet > 0 then
         send_audio_packet(packet)
     end
+
+    -- get loudness from client
+    local loudness = gVoiceBridge.recvFs:get_file("loudness")
+    if not loudness then
+        return
+    end
+
+    loudness:seek(4, FILE_SEEK_SET)
+
+    while not loudness:is_eof() do
+        local i = loudness:read_integer(INT_TYPE_U8)
+        local vol = loudness:read_number(FLOAT_TYPE_F64)
+        gVoiceStates[i].loudness = math.max(0, amp2db(vol) + 100) / 100
+    end
 end
 
 function audio_send()
     local i = 0
 
+    -- send audio data to client
     ::write::
     while i < MAX_PLAYERS - 1 do
         i = i + 1

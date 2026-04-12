@@ -5,6 +5,7 @@ import (
 	"coop-voicechat/audio"
 	"coop-voicechat/coop"
 	"log"
+	"math"
 
 	"github.com/gopxl/beep/v2/speaker"
 	"github.com/gordonklaus/portaudio"
@@ -24,6 +25,7 @@ type AudioBridge struct {
 
 	paInStream  *portaudio.Stream
 	paInBuffer  []float32
+	inRms       float64
 	inTimestamp int
 	inQueue     []*frame
 	opusEncoder *audio.OpusEncoder
@@ -54,6 +56,14 @@ func (a *AudioBridge) encodeNext() {
 	if !a.bridge.Connected {
 		return
 	}
+
+	rms := 0.0
+	for i := range a.paInBuffer {
+		vol := float64(a.paInBuffer[i])
+		rms += vol * vol
+	}
+	rms = math.Sqrt(rms / float64(len(a.paInBuffer)))
+	a.inRms = rms
 
 	timestamp := a.inTimestamp
 	a.inTimestamp++
@@ -166,5 +176,16 @@ func (a *AudioBridge) send() {
 		in.WriteUint32(uint32(f.timestamp))
 		in.WriteUint32(uint32(len(f.data)))
 		in.WriteBytes(f.data)
+	}
+
+	vols := a.bridge.SendFs.Create("loudness")
+	vols.WriteBytes(FILE_HEADER_BYTES)
+
+	vols.WriteUint8(0)
+	vols.WriteFloat64(a.inRms)
+
+	for i, s := range a.streamers {
+		vols.WriteUint8(i)
+		vols.WriteFloat64(s.Rms())
 	}
 }
