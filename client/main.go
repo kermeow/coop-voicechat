@@ -57,22 +57,22 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	sigChan := make(chan os.Signal)
+	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan)
 	go func() {
 		for sig := range sigChan {
 			switch sig {
 			case os.Interrupt, os.Kill:
 				log.Println(sig.String(), "received")
-				cancel()
+				systray.Quit()
 			}
 		}
 	}()
 
 	go gVoiceBridge.Run(ctx)
-	go systray.Run(onReady, cancel)
-
-	<-ctx.Done()
+	systray.Run(onReady, func() {
+		cancel()
+	})
 }
 
 func onReady() {
