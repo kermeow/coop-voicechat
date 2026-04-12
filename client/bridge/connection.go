@@ -24,7 +24,7 @@ func (b *Bridge) poll() bool {
 	b.syncRemoteAckFrame, _ = syncFile.ReadUint32()
 
 	ackFrameValid := b.syncRemoteAckFrame <= b.syncLocalFrame
-	ackFrameThreshold := b.syncLocalFrame-b.syncRemoteAckFrame < 6
+	ackFrameThreshold := b.syncLocalFrame-b.syncRemoteAckFrame < 12
 
 	b.syncLocalFrame++
 	b.syncLastRemoteFrame = lastRemoteFrame
@@ -44,7 +44,7 @@ func (b *Bridge) poll() bool {
 
 	if lastActive && !(ackFrameValid && ackFrameThreshold) {
 		b.syncTimeoutCounter++
-		if b.syncTimeoutCounter > 6 {
+		if b.syncTimeoutCounter > 12 {
 			log.Printf("Bridge disconnected - av:%t aft:%t slf:%d srf:%d sraf:%d stc:%d\n", ackFrameValid, ackFrameThreshold, b.syncLocalFrame, b.syncRemoteFrame, b.syncRemoteAckFrame, b.syncTimeoutCounter)
 			b.disconnect()
 		}

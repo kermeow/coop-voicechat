@@ -13,7 +13,7 @@ const FILE_HEADER = "smvc"
 
 var FILE_HEADER_BYTES = []byte(FILE_HEADER) // cant be const because go bruh
 
-const UPDATE_INTERVAL = 33 // 1/30
+const UPDATE_INTERVAL = 16 // 1/60
 
 type Bridge struct {
 	Connected bool
