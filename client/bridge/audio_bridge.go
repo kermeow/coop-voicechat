@@ -143,7 +143,7 @@ func (a *AudioBridge) recv() {
 			t, _ := f.ReadUint32()
 			l, _ := f.ReadUint32()
 			data, _ := f.ReadBytes(int(l))
-			if sf < a.bridge.syncRemoteFrame {
+			if sf <= a.bridge.syncLastRemoteFrame {
 				continue
 			}
 			s.Push(data, int(t))
@@ -159,7 +159,7 @@ func (a *AudioBridge) send() {
 		if f.syncFrame == 0 {
 			f.syncFrame = a.bridge.syncLocalFrame
 		}
-		if f.syncFrame < a.bridge.syncRemoteAckFrame {
+		if f.syncFrame < a.bridge.syncRemoteAckFrame-1 {
 			continue
 		}
 		in.WriteUint32(f.syncFrame)

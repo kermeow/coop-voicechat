@@ -57,7 +57,7 @@ function audio_recv()
         local timestamp = stream:read_integer(INT_TYPE_U32)
         local len = stream:read_integer(INT_TYPE_U32)
         local data = stream:read_bytes(len)
-        if syncFrame < gVoiceBridge.syncRemoteFrame then
+        if syncFrame <= gVoiceBridge.syncLastRemoteFrame then
             goto read
         end
         local segment = string.pack(PACK_PREFIX .. "I4I4", timestamp, len) .. data
@@ -100,9 +100,13 @@ function audio_send()
         mod_fs_file_clear(stream)
         stream:write_bytes(FILE_HEADER)
 
-        local deadFrames = math.max(0, #lVoiceState.audioFrames - MAX_AUDIO_FRAMES)
+        table.sort(lVoiceState.audioFrames, function(a, b)
+            return a.timestamp < b.timestamp
+        end)
 
-        local written, skipped = 0, 0
+        local last = 0
+
+        local deadFrames = math.max(0, #lVoiceState.audioFrames - MAX_AUDIO_FRAMES)
 
         for i, frame in pairs(lVoiceState.audioFrames) do
             if frame.syncFrame == 0 then
@@ -110,23 +114,26 @@ function audio_send()
             end
             if frame.syncFrame < gVoiceBridge.syncRemoteAckFrame then
                 deadFrames = math.max(deadFrames, i)
-                skipped = skipped + #frame.data
             else
                 stream:write_integer(frame.syncFrame, INT_TYPE_U32)
                 stream:write_integer(frame.timestamp, INT_TYPE_U32)
                 stream:write_integer(#frame.data, INT_TYPE_U32)
                 stream:write_bytes(frame.data)
-                written = written + #frame.data
+
+                if last > 0 then
+                    if last ~= frame.timestamp - 1 then
+                        djui_chat_message_create(string.format("lost %d to %d", last, frame.timestamp))
+                    end
+                end
+                last = frame.timestamp
             end
         end
 
-        djui_chat_message_create(string.format("wrote %d, skipped %d", written, skipped))
-
-        -- if deadFrames > 0 then
-        --     for _ = 1, deadFrames do
-        --         table.remove(lVoiceState.audioFrames, 1)
-        --     end
-        -- end
+        if deadFrames > 0 then
+            for _ = 1, deadFrames do
+                table.remove(lVoiceState.audioFrames, 1)
+            end
+        end
     end
 end
 
