@@ -51,6 +51,8 @@ local function bridge_poll()
         return false
     end
 
+    syncFile:seek(4, FILE_SEEK_SET)
+
     local remoteVersion = syncFile:read_integer(INT_TYPE_U16)
     if remoteVersion ~= BRIDGE_VERSION then
         local next_version_warning = last_version_warning + 900
@@ -142,6 +144,7 @@ local function bridge_update()
     end
 
     gVoiceBridge.syncFile:rewind()
+    gVoiceBridge.syncFile:write_bytes(FILE_HEADER)
     gVoiceBridge.syncFile:write_integer(BRIDGE_VERSION, INT_TYPE_U16)
     gVoiceBridge.syncFile:write_integer(gVoiceBridge.syncLocalFrame, INT_TYPE_U32)
     gVoiceBridge.syncFile:write_integer(gVoiceBridge.syncRemoteFrame, INT_TYPE_U32)

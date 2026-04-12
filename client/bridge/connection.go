@@ -13,7 +13,7 @@ func (b *Bridge) poll() bool {
 	lastActive := b.Connected
 	lastRemoteFrame := b.syncRemoteFrame
 
-	syncFile.Cursor = 0
+	syncFile.Cursor = 4
 
 	remoteVersion, _ := syncFile.ReadUint16()
 	if remoteVersion != BRIDGE_VERSION {

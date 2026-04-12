@@ -138,6 +138,7 @@ func (b *Bridge) update() {
 	}
 
 	syncFile := b.SendFs.Create("sync")
+	syncFile.WriteBytes(FILE_HEADER_BYTES)
 	syncFile.WriteUint16(BRIDGE_VERSION)
 	syncFile.WriteUint32(b.syncLocalFrame)
 	syncFile.WriteUint32(b.syncRemoteFrame)
