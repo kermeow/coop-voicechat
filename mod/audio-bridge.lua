@@ -35,7 +35,7 @@ local function recv_audio_packet(packet)
         packet = string.sub(packet, 9)
 
         local data = string.sub(packet, 1, len)
-        table.insert(lVoiceState, { syncFrame = 0, timestamp = timestamp, data = data })
+        table.insert(lVoiceState.audioFrames, { syncFrame = 0, timestamp = timestamp, data = data })
 
         packet = string.sub(packet, len + 1)
     end
@@ -102,25 +102,31 @@ function audio_send()
 
         local deadFrames = math.max(0, #lVoiceState.audioFrames - MAX_AUDIO_FRAMES)
 
+        local written, skipped = 0, 0
+
         for i, frame in pairs(lVoiceState.audioFrames) do
             if frame.syncFrame == 0 then
                 frame.syncFrame = gVoiceBridge.syncLocalFrame
             end
             if frame.syncFrame < gVoiceBridge.syncRemoteAckFrame then
                 deadFrames = math.max(deadFrames, i)
+                skipped = skipped + #frame.data
             else
                 stream:write_integer(frame.syncFrame, INT_TYPE_U32)
                 stream:write_integer(frame.timestamp, INT_TYPE_U32)
                 stream:write_integer(#frame.data, INT_TYPE_U32)
                 stream:write_bytes(frame.data)
+                written = written + #frame.data
             end
         end
 
-        if deadFrames > 0 then
-            for _ = 1, deadFrames do
-                table.remove(lVoiceState.audioFrames, 1)
-            end
-        end
+        djui_chat_message_create(string.format("wrote %d, skipped %d", written, skipped))
+
+        -- if deadFrames > 0 then
+        --     for _ = 1, deadFrames do
+        --         table.remove(lVoiceState.audioFrames, 1)
+        --     end
+        -- end
     end
 end
 
