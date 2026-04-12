@@ -15,6 +15,7 @@ end
 ---@param file ModFsFile
 ---@return boolean
 function mod_fs_file_write_player(file, localIndex)
+    local lVoiceState = gVoiceStates[localIndex]
     local lMarioState = gMarioStates[localIndex]
     local lNetworkPlayer = gNetworkPlayers[localIndex]
 
@@ -29,6 +30,8 @@ function mod_fs_file_write_player(file, localIndex)
 
     file:write_integer(lMarioState.cap, INT_TYPE_U8)
     file:write_integer(lMarioState.waterLevel, INT_TYPE_U16)
-    
+
+    file:write_number(lVoiceState.volume, FLOAT_TYPE_F64)
+
     return true
 end

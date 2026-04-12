@@ -20,6 +20,8 @@ type PlayerState struct {
 
 	Cap        uint8
 	WaterLevel uint16
+
+	Volume float64
 }
 
 var LocalPlayer *Player = &Player{}

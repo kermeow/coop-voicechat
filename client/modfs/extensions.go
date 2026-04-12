@@ -32,6 +32,8 @@ func (f *ModFsFile) ReadPlayer(p *coop.PlayerState) error {
 	cap, _ := f.ReadUint8()
 	water, _ := f.ReadUint16()
 
+	volume, _ := f.ReadFloat64()
+
 	// todo: check errors
 
 	p.HeadPosition = pos
@@ -42,6 +44,8 @@ func (f *ModFsFile) ReadPlayer(p *coop.PlayerState) error {
 
 	p.Cap = cap
 	p.WaterLevel = water
+
+	p.Volume = volume
 
 	return nil
 }
