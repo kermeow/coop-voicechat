@@ -130,6 +130,24 @@ func (a *AudioBridge) stop() {
 }
 
 func (a *AudioBridge) recv() {
+	for i, s := range a.streamers {
+		f, err := a.bridge.RecvFs.Get(a.bridge.audioFiles[i])
+		if err != nil {
+			continue
+		}
+
+		f.Cursor = 4 // skip header
+		for f.Cursor < len(f.Data) {
+			sf, _ := f.ReadUint32()
+			t, _ := f.ReadUint32()
+			l, _ := f.ReadUint32()
+			data, _ := f.ReadBytes(int(l))
+			if sf < a.bridge.syncRemoteFrame {
+				continue
+			}
+			s.Put(data, int(t))
+		}
+	}
 }
 
 func (a *AudioBridge) send() {
