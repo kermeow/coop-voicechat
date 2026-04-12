@@ -7,15 +7,15 @@ import (
 )
 
 type PlayerStreamer struct {
-	player   *coop.Player
-	streamer *OpusStreamer
+	Player *coop.Player
 
-	volume *effects.Volume
+	streamer *OpusStreamer
+	volume   *effects.Volume
 }
 
 func NewPlayerStreamer(player *coop.Player) *PlayerStreamer {
 	s := &PlayerStreamer{
-		player:   player,
+		Player:   player,
 		streamer: NewOpusStreamer(),
 	}
 	s.volume = &effects.Volume{
@@ -28,7 +28,7 @@ func NewPlayerStreamer(player *coop.Player) *PlayerStreamer {
 }
 
 func (s *PlayerStreamer) Stream(samples [][2]float64) (n int, ok bool) {
-	if s.player.LocalIndex < 1 {
+	if s.Player.LocalIndex < 1 {
 		return 0, true // stops streaming
 	}
 	n, ok = s.volume.Stream(samples)
