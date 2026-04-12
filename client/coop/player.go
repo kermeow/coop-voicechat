@@ -9,12 +9,12 @@ type Player struct {
 
 	HeadPosition vec
 
-	CurrentLevel uint8
-	CurrentArea  uint8
-	CurrentRoom  uint8
+	CurrentLevel uint16
+	CurrentArea  uint16
+	CurrentRoom  uint16
 
 	Cap        uint8
-	WaterLevel uint8
+	WaterLevel uint16
 }
 
 var LocalPlayer *Player = &Player{}

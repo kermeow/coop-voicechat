@@ -25,12 +25,12 @@ func (f *ModFsFile) ReadVec(n int) (vec, error) {
 func (f *ModFsFile) ReadPlayer(p *coop.Player) error {
 	pos, _ := f.ReadVec(3)
 
-	level, _ := f.ReadUint8()
-	area, _ := f.ReadUint8()
-	room, _ := f.ReadUint8()
+	level, _ := f.ReadUint16()
+	area, _ := f.ReadUint16()
+	room, _ := f.ReadUint16()
 
 	cap, _ := f.ReadUint8()
-	water, _ := f.ReadUint8()
+	water, _ := f.ReadUint16()
 
 	// todo: check errors
 
