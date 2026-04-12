@@ -56,7 +56,7 @@ func (a *AudioBridge) encodeNext() {
 	}
 
 	timestamp := a.inTimestamp
-	a.inTimestamp += len(a.paInBuffer)
+	a.inTimestamp++
 
 	data, err := a.opusEncoder.Encode(a.paInBuffer)
 	if err != nil {
@@ -146,7 +146,7 @@ func (a *AudioBridge) recv() {
 			if sf < a.bridge.syncRemoteFrame {
 				continue
 			}
-			s.Put(data, int(t))
+			s.Push(data, int(t))
 		}
 	}
 }
