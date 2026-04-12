@@ -1,8 +1,6 @@
 package audio
 
-import (
-	"math"
-)
+import "math"
 
 type OpusStreamer struct {
 	jitter   *JitterBuffer

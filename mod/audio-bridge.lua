@@ -119,8 +119,6 @@ function audio_send()
             return a.timestamp < b.timestamp
         end)
 
-        local last = 0
-
         local deadFrames = math.max(0, #lVoiceState.audioFrames - MAX_AUDIO_FRAMES)
 
         for i, frame in pairs(lVoiceState.audioFrames) do
@@ -134,13 +132,6 @@ function audio_send()
                 stream:write_integer(frame.timestamp, INT_TYPE_U32)
                 stream:write_integer(#frame.data, INT_TYPE_U32)
                 stream:write_bytes(frame.data)
-
-                if last > 0 then
-                    if last ~= frame.timestamp - 1 then
-                        djui_chat_message_create(string.format("lost %d to %d", last, frame.timestamp))
-                    end
-                end
-                last = frame.timestamp
             end
         end
 

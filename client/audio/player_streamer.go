@@ -23,9 +23,7 @@ func NewPlayerStreamer(player *coop.Player) *PlayerStreamer {
 	}
 	s.volume = &effects.Volume{
 		Streamer: s.analyzer,
-		Base:     2,
 		Volume:   0,
-		Silent:   true,
 	}
 	return s
 }
@@ -38,6 +36,7 @@ func (s *PlayerStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 	if s.Player.LocalIndex < 1 {
 		return 0, true // stops streaming
 	}
+	s.volume.Volume = s.Player.State.Volume
 	n, ok = s.volume.Stream(samples)
 	return n, ok
 }

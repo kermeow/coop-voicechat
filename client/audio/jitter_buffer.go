@@ -2,12 +2,12 @@ package audio
 
 import (
 	"errors"
-	"log"
+	// "log"
 	"sync"
 )
 
 const JITTER_BUFFER_MAX = 10
-const JITTER_BUFFER_MIN = 3
+const JITTER_BUFFER_MIN = 4
 
 var (
 	ErrJitterBuffering = errors.New("jitter buffer not ready")
@@ -63,6 +63,10 @@ func (j *JitterBuffer) Pop() (*JitterPacket, error) {
 
 	var packet *JitterPacket = j.packets[0]
 
+	if packet == nil {
+		return nil, ErrJitterUnderrun
+	}
+
 	for _, p := range j.packets {
 		if p.Timestamp == j.playoutHead {
 			packet = p
@@ -70,18 +74,19 @@ func (j *JitterBuffer) Pop() (*JitterPacket, error) {
 		}
 	}
 
-	if packet == nil {
-		return nil, ErrJitterUnderrun
+	if packet.Timestamp > j.playoutHead {
+		j.playoutHead = packet.Timestamp
+		return nil, ErrJitterMissing
 	}
 
-	if packet.Timestamp > j.playoutHead {
+	if j.playoutHead > packet.Timestamp {
 		j.playoutHead = packet.Timestamp
 		return nil, ErrJitterMissing
 	}
 
 	j.playoutHead++
 
-	log.Printf("playout head is %d frames behind", j.packets[len(j.packets)-1].Timestamp-j.playoutHead)
+	// log.Printf("playout head is %d frames behind", j.packets[len(j.packets)-1].Timestamp-j.playoutHead)
 
 	return packet, nil
 }
