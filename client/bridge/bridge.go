@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"context"
-	"coop-voicechat/audio"
+	"coop-voicechat/coop"
 	"coop-voicechat/modfs"
 	"log"
 	"time"
@@ -14,13 +14,14 @@ const UPDATE_INTERVAL = 33 // 1/30
 
 type Bridge struct {
 	Connected bool
+	Players   map[uint8]*coop.Player
 
 	SendFs *modfs.ModFs
 	RecvFs *modfs.ModFs
 
 	Event chan BridgeEvent
 
-	audio *audio.AudioBridge
+	audio *AudioBridge
 
 	updTicker *time.Ticker
 	stopChan  chan bool
@@ -45,15 +46,13 @@ func NewBridge() *Bridge {
 	}
 	recv_modfs.Write()
 
-	return &Bridge{
+	b := &Bridge{
 		Connected: false,
 
 		SendFs: send_modfs,
 		RecvFs: recv_modfs,
 
 		Event: make(chan BridgeEvent),
-
-		audio: audio.NewAudioBridge(),
 
 		updTicker: time.NewTicker(time.Millisecond * UPDATE_INTERVAL),
 
@@ -63,6 +62,8 @@ func NewBridge() *Bridge {
 		syncLastRemoteFrame: 0,
 		syncTimeoutCounter:  0,
 	}
+	b.audio = NewAudioBridge(b)
+	return b
 }
 
 func (b *Bridge) connect() {
@@ -71,6 +72,8 @@ func (b *Bridge) connect() {
 	}
 	b.Connected = true
 	b.Event <- BridgeConnect
+
+	b.audio.connect()
 }
 
 func (b *Bridge) disconnect() {
@@ -79,12 +82,18 @@ func (b *Bridge) disconnect() {
 	}
 	b.Connected = false
 	b.Event <- BridgeDisconnect
+
+	b.audio.disconnect()
+
+	for i := range b.Players {
+		delete(b.Players, i)
+	}
 }
 
 func (b *Bridge) Run(ctx context.Context) {
 	log.Println("Bridge running")
 
-	go b.audio.Run(ctx)
+	go b.audio.run(ctx)
 
 running:
 	for {
@@ -107,6 +116,8 @@ func (b *Bridge) stop() {
 
 func (b *Bridge) update() {
 	if b.poll() {
+		b.recv()
+		b.send()
 	}
 
 	syncFile := b.SendFs.Create("sync")
@@ -115,4 +126,10 @@ func (b *Bridge) update() {
 	syncFile.WriteUint32(b.syncRemoteFrame)
 
 	b.SendFs.Write()
+}
+
+func (b *Bridge) recv() {
+}
+
+func (b *Bridge) send() {
 }
