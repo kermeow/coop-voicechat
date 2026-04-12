@@ -1,15 +1,15 @@
 package audio
 
 import (
+	"coop-voicechat/audio/effects"
 	"coop-voicechat/coop"
-
-	"github.com/gopxl/beep/v2/effects"
 )
 
 type PlayerStreamer struct {
 	Player *coop.Player
 
 	streamer *OpusStreamer
+	analyzer *effects.Analyzer
 	volume   *effects.Volume
 }
 
@@ -18,11 +18,14 @@ func NewPlayerStreamer(player *coop.Player) *PlayerStreamer {
 		Player:   player,
 		streamer: NewOpusStreamer(),
 	}
-	s.volume = &effects.Volume{
+	s.analyzer = &effects.Analyzer{
 		Streamer: s.streamer,
+	}
+	s.volume = &effects.Volume{
+		Streamer: s.analyzer,
 		Base:     2,
 		Volume:   0,
-		Silent:   false,
+		Silent:   true,
 	}
 	return s
 }
@@ -41,4 +44,8 @@ func (s *PlayerStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 
 func (s *PlayerStreamer) Err() error {
 	return s.streamer.Err()
+}
+
+func (s *PlayerStreamer) Rms() float64 {
+	return s.analyzer.Rms()
 }

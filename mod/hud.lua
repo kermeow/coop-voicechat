@@ -2,7 +2,7 @@ local TEX_MIC = get_texture_info("hud-microphone")
 
 local function render_player_microphone_status_interpolated(index, prevX, prevY, prevScale, x, y, scale)
     local v = gVoiceStates[index]
-    local connected = v.speakVol ~= 1
+    local connected = v.loudness > 0
 
     local rotation, pivotX, pivotY = djui_hud_get_rotation()
 
@@ -11,7 +11,7 @@ local function render_player_microphone_status_interpolated(index, prevX, prevY,
         tileX = 16
     end
 
-    local speakScale = connected and (math.max(v.speakVol, 0.15) - 0.15)*(1/0.85) or 0
+    local speakScale = connected and (math.max(v.loudness, 0.15) - 0.15)*(1/0.85) or 0
     djui_hud_set_rotation(rotation + 0x1000*math.sin(get_global_timer())*speakScale, 0.5, 0.5)
     djui_hud_render_texture_tile_interpolated(TEX_MIC, prevX, prevY, prevScale, prevScale, x, y, scale, scale, tileX, 0, 16, 16)
 
