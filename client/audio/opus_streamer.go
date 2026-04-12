@@ -26,10 +26,11 @@ func (s *OpusStreamer) Put(packet []byte, timestamp int) {
 }
 
 func (s *OpusStreamer) Stream(samples [][2]float64) (n int, ok bool) {
-	nSamples, filled := len(samples), len(s.leftover)
+	nSamples := len(samples)
 
 	opusSamples := make([]float32, len(samples))
-	copy(opusSamples, s.leftover)
+	filled := copy(opusSamples, s.leftover)
+	s.leftover = make([]float32, 0)
 
 	for filled < nSamples {
 		packet := &JitterPacket{}
@@ -43,20 +44,21 @@ func (s *OpusStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 			if s.err != nil {
 				return filled, false
 			}
-			copied := copy(opusSamples[filled:], dec[offset:])
-			if copied < len(dec) {
-				s.leftover = make([]float32, len(dec)-copied)
-				copy(s.leftover, dec[copied:])
-			}
-			filled += len(dec) - offset
 		default:
-			dec, s.err = s.decoder.DecodePLC(packet.Span)
+			dec, s.err = s.decoder.DecodePLC(OPUS_FRAME_SAMPLES)
+			if packet.Span < OPUS_FRAME_SAMPLES {
+				dec = dec[:packet.Span]
+			}
 			if s.err != nil {
 				return filled, false
 			}
-			copy(opusSamples[filled:], dec)
-			filled += len(dec)
 		}
+		copied := copy(opusSamples[filled:], dec[offset:])
+		if copied < len(dec) {
+			s.leftover = make([]float32, len(dec)-copied)
+			copy(s.leftover, dec[copied:])
+		}
+		filled += copied
 	}
 
 	for i, sample := range opusSamples {
