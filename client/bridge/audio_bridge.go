@@ -19,7 +19,7 @@ type frame struct {
 }
 
 type AudioBridge struct {
-	b         *Bridge
+	bridge    *Bridge
 	streamers map[uint8]*audio.PlayerStreamer
 
 	paInStream  *portaudio.Stream
@@ -31,7 +31,7 @@ type AudioBridge struct {
 
 func NewAudioBridge(b *Bridge) *AudioBridge {
 	a := &AudioBridge{
-		b:         b,
+		bridge:    b,
 		streamers: make(map[uint8]*audio.PlayerStreamer),
 
 		paInBuffer:  make([]float32, audio.OPUS_FRAME_SAMPLES),
@@ -50,7 +50,7 @@ func (a *AudioBridge) encodeNext() {
 		return
 	}
 
-	if !a.b.Connected {
+	if !a.bridge.Connected {
 		return
 	}
 
@@ -126,5 +126,26 @@ func (a *AudioBridge) stop() {
 
 	for i := range a.streamers {
 		a.removePlayer(i)
+	}
+}
+
+func (a *AudioBridge) recv() {
+}
+
+func (a *AudioBridge) send() {
+	in := a.bridge.SendFs.Create("stream")
+	in.WriteBytes(FILE_HEADER_BYTES)
+
+	for _, f := range a.inQueue {
+		if f.syncFrame == 0 {
+			f.syncFrame = a.bridge.syncLocalFrame
+		}
+		if f.syncFrame < a.bridge.syncRemoteAckFrame {
+			continue
+		}
+		in.WriteUint32(f.syncFrame)
+		in.WriteUint32(uint32(f.timestamp))
+		in.WriteUint32(uint32(len(f.data)))
+		in.WriteBytes(f.data)
 	}
 }
