@@ -61,6 +61,7 @@ func (a *AudioBridge) encodeNext() {
 	for i := range a.paInBuffer {
 		vol := float64(a.paInBuffer[i])
 		rms += vol * vol
+		a.paInBuffer[i] = float32(math.Tanh(vol * math.Pow(coop.LocalPlayer.State.Volume, 2)))
 	}
 	rms = math.Sqrt(rms / float64(len(a.paInBuffer)))
 	a.inRms = rms
