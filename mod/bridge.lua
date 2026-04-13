@@ -24,6 +24,12 @@ gVoiceBridge.syncRemoteAckFrame = 0
 gVoiceBridge.syncLastRemoteFrame = 0
 gVoiceBridge.syncTimeoutCounter = 0
 
+-- Settings
+gVoiceBridge.settings = {}
+gVoiceBridge.settings.suppression = true
+gVoiceBridge.settings.stereoPan = true
+gVoiceBridge.settings.effectStrength = 1
+
 local function bridge_connect()
     gVoiceBridge.connected = true
     play_sound(SOUND_GENERAL_COIN, gGlobalSoundSource)

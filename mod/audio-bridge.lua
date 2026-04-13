@@ -12,7 +12,10 @@ for i = 0, MAX_PLAYERS - 1 do
         audioFrames = {},
 
         volume = 1,
-        loudness = -1
+        loudness = -1,
+        mute = false,
+        clientMute = false, -- used locally for muting players, not remote players muting themselves
+        deafen = false,
     }
 end
 

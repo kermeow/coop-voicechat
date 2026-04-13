@@ -2,7 +2,7 @@ local TEX_MIC = get_texture_info("smvc_mic")
 local TEX_SND = get_texture_info("smvc_snd")
 local TEX_DISCONNECTED = get_texture_info("smvc_disconnected")
 
-local function render_player_voice_status_interpolated(index, prevX, prevY, prevScale, x, y, scale)
+function render_player_voice_status_interpolated(index, prevX, prevY, prevScale, x, y, scale)
     local v = gVoiceStates[index]
     local connected = v.loudness >= 0
 
@@ -19,7 +19,7 @@ local function render_player_voice_status_interpolated(index, prevX, prevY, prev
     djui_hud_set_rotation(rotation, pivotX, pivotY)
 end
 
-local function render_player_voice_status(index, x, y, scale)
+function render_player_voice_status(index, x, y, scale)
     render_player_voice_status_interpolated(index, x, y, scale, x, y, scale)
 end
 
