@@ -7,6 +7,7 @@ require (
 	github.com/gopxl/beep/v2 v2.1.1
 	github.com/gordonklaus/portaudio v0.0.0-20260203164431-765aa7dfa631
 	github.com/hraban/opus v0.0.0-20251117090126-c76ea7e21bf3
+	github.com/kermeow/rnnoise v0.0.2
 	github.com/postfinance/single v0.0.2
 	github.com/quartercastle/vector v0.2.0
 )
