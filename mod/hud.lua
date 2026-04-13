@@ -5,13 +5,26 @@ local TEX_DISCONNECTED = get_texture_info("smvc_disconnected")
 function render_player_voice_status_interpolated(index, prevX, prevY, prevScale, x, y, scale)
     local v = gVoiceStates[index]
     local connected = v.loudness >= 0
+    local deafened = v.deafen
+    local muted = v.mute
+    local tileX = 0
+    local texture = TEX_MIC
+    if not connected then
+        texture = TEX_DISCONNECTED
+        tileX = 0
+    elseif deafened then
+        texture = TEX_SND
+        tileX = 16
+    elseif muted then
+        texture = TEX_MIC
+        tileX = 16
+    end
 
     local rotation, pivotX, pivotY = djui_hud_get_rotation()
 
-    local tileX = 0
-    local speakScale = connected and (math.max(v.loudness, 0.15) - 0.15) * (1 / 0.85) or 0
+    local speakScale = (texture == TEX_MIC and tileX == 0) and (math.max(v.loudness, 0.15) - 0.15) * (1 / 0.85) or 0
     djui_hud_set_rotation(rotation + 0x1000 * math.sin(get_global_timer()) * speakScale, 0.5, 0.5)
-    djui_hud_render_texture_tile_interpolated(TEX_MIC, prevX, prevY, prevScale, prevScale, x, y, scale, scale, tileX,
+    djui_hud_render_texture_tile_interpolated(texture, prevX, prevY, prevScale, prevScale, x, y, scale, scale, tileX,
         0,
         16, 16)
 
@@ -34,12 +47,7 @@ local function render_hud_voice_status()
         x = x + 32
     end
 
-    local connected = gVoiceBridge.connected
-    if connected then
-        render_player_voice_status(0, x, y, 1)
-    else
-        djui_hud_render_texture_interpolated(TEX_DISCONNECTED, x, y, 1, 1, x, y, 1, 1)
-    end
+    render_player_voice_status(0, x, y, 1)
 end
 
 sStateExtras = {}

@@ -194,7 +194,6 @@ local function render_voice_settings()
         if gVoiceStates[0].deafen then
             gVoiceStates[0].clientMute = true
         end
-        gVoiceStates[0].mute = gVoiceStates[0].clientMute
 
         djui_hud_render_texture_tile(TEX_MIC, boxX + 25, (screenHeight - 57)*heightScale, 2*heightScale, 2*heightScale, gVoiceStates[0].clientMute and 16 or 0, 0, 16, 16)
         djui_hud_render_texture_tile(TEX_SND, boxX + 25 + 34*heightScale, (screenHeight - 57)*heightScale, 2*heightScale, 2*heightScale, gVoiceStates[0].deafen and 16 or 0, 0, 16, 16)
@@ -221,8 +220,21 @@ end
 local function hud_render()
     FONT_USER = djui_menu_get_font()
 
-    render_voice_settings()
-    
+    -- Sync local mute with ui mute
+    gVoiceStates[0].mute = gVoiceStates[0].clientMute
+    render_voice_settings() 
 end
 
 hook_event(HOOK_ON_HUD_RENDER, hud_render)
+
+hook_chat_command("m", "- Toggles Muting in Voice Chat", function()
+    gVoiceStates[0].clientMute = not gVoiceStates[0].clientMute
+    djui_chat_message_create(gVoiceStates[0].clientMute and "Client Muted" or "Client Unmuted")
+    return true
+end)
+
+hook_chat_command("d", "- Toggles Deafening in Voice Chat", function()
+    gVoiceStates[0].deafen = not gVoiceStates[0].deafen
+    djui_chat_message_create(gVoiceStates[0].clientMute and "Client Deafened" or "Client Undeafened")
+    return true
+end)
