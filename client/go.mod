@@ -25,3 +25,5 @@ replace github.com/energye/systray => github.com/kermeow/systray v0.0.0
 replace github.com/gordonklaus/portaudio => github.com/kermeow/static-portaudio v0.0.2
 
 replace github.com/hraban/opus => github.com/kermeow/static-opus v0.0.5
+
+replace github.com/kermeow/rnnoise => github.com/kermeow/static-rnnoise v0.0.2
