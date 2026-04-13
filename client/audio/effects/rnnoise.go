@@ -42,9 +42,16 @@ func (d *Denoiser) Stream(samples [][2]float64) (n int, ok bool) {
 			return filled, sok
 		}
 
+		if d.Bypass {
+			copied := copy(samples[filled:], d.stream)
+			d.denoiseBuffer = d.denoiseBuffer[copied:]
+			filled += copied
+			continue
+		}
+
 		inBuffer := make([]float32, fs)
 		for i := range fs {
-			inBuffer[i] = float32((d.stream[i][0] + d.stream[i][1]) / 2)
+			inBuffer[i] = float32(d.stream[i][0]+d.stream[i][1]) / 2
 		}
 
 		d.denoiseBuffer = make([]float32, fs)
