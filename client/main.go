@@ -73,6 +73,7 @@ func main() {
 	systray.Run(onReady, func() {
 		cancel()
 	})
+	<-ctx.Done()
 }
 
 func onReady() {
