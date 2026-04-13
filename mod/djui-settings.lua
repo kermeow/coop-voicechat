@@ -194,6 +194,7 @@ local function render_voice_settings()
         if gVoiceStates[0].deafen then
             gVoiceStates[0].clientMute = true
         end
+        gVoiceStates[0].mute = gVoiceStates[0].clientMute
 
         djui_hud_render_texture_tile(TEX_MIC, boxX + 25, (screenHeight - 57)*heightScale, 2*heightScale, 2*heightScale, gVoiceStates[0].clientMute and 16 or 0, 0, 16, 16)
         djui_hud_render_texture_tile(TEX_SND, boxX + 25 + 34*heightScale, (screenHeight - 57)*heightScale, 2*heightScale, 2*heightScale, gVoiceStates[0].deafen and 16 or 0, 0, 16, 16)
