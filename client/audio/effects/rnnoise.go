@@ -31,7 +31,7 @@ func NewDenoiser(streamer beep.Streamer) *Denoiser {
 func (d *Denoiser) Stream(samples [][2]float64) (n int, ok bool) {
 	nSamples := len(samples)
 
-	filled := convert(d.denoiseBuffer, samples)
+	filled := d.convert(d.denoiseBuffer, samples)
 	d.denoiseBuffer = d.denoiseBuffer[filled:]
 
 	for filled < nSamples {
@@ -61,7 +61,7 @@ func (d *Denoiser) Stream(samples [][2]float64) (n int, ok bool) {
 			return filled, false
 		}
 
-		copied := convert(d.denoiseBuffer, samples[filled:])
+		copied := d.convert(d.denoiseBuffer, samples[filled:])
 		d.denoiseBuffer = d.denoiseBuffer[copied:]
 		filled += copied
 	}
@@ -76,7 +76,7 @@ func (d *Denoiser) Err() error {
 	return d.Streamer.Err()
 }
 
-func convert(in []float32, out [][2]float64) int {
+func (d *Denoiser) convert(in []float32, out [][2]float64) int {
 	fill := min(len(in), len(out))
 	for i := range fill {
 		f64 := float64(in[i] / 32767)
