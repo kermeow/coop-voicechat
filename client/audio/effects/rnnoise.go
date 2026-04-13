@@ -49,12 +49,13 @@ func (d *Denoiser) Stream(samples [][2]float64) (n int, ok bool) {
 			continue
 		}
 
+		inBuffer := make([]float32, fs)
 		d.denoiseBuffer = make([]float32, fs)
 		for i := range fs {
-			d.denoiseBuffer[i] = float32(d.stream[i][0]+d.stream[i][1]) / 2
+			inBuffer[i] = 32767 * float32(d.stream[i][0]+d.stream[i][1]) / 2
 		}
 
-		d.denoiseErr = d.denoiseState.ProcessFrame(d.denoiseBuffer, d.denoiseBuffer)
+		_, d.denoiseErr = d.denoiseState.ProcessFrame(d.denoiseBuffer, inBuffer)
 
 		if d.denoiseErr != nil {
 			return filled, false
@@ -78,7 +79,7 @@ func (d *Denoiser) Err() error {
 func convert(in []float32, out [][2]float64) int {
 	fill := min(len(in), len(out))
 	for i := range fill {
-		f64 := float64(in[i])
+		f64 := float64(in[i] / 32767)
 		out[i][0] = f64
 		out[i][1] = f64
 	}
