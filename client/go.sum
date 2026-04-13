@@ -13,8 +13,8 @@ github.com/kermeow/static-opus v0.0.5 h1:wdiS5BgliZ5m1EqvX5MCLreMTk8ArOiuiLhe3+J
 github.com/kermeow/static-opus v0.0.5/go.mod h1:1USCXrVFHE87QtVUOhc02RJ2YOHKgnvwdfp/E4qvWRs=
 github.com/kermeow/static-portaudio v0.0.2 h1:57KJjkqIRvJeaXmYOZVTaEa2DPEA8k1fiesyaVQxPf0=
 github.com/kermeow/static-portaudio v0.0.2/go.mod h1:YqUWT21p99zmEvtd4brf9eAd/khvl2VOfNIM/wLbsc8=
-github.com/kermeow/static-rnnoise v0.0.2 h1:YYOjKjdf+cj8KqCXFvD6QaSGzaseDmHshIvbPN85QqM=
-github.com/kermeow/static-rnnoise v0.0.2/go.mod h1:31ZjvwMMBsssPWR+ZgkvbK5zN86WentgEMVnEdIwagE=
+github.com/kermeow/static-rnnoise v0.0.3 h1:KwlQTNO2Quxdf5owRviuMeRwl7+K8k6xtqv9d2SYbaE=
+github.com/kermeow/static-rnnoise v0.0.3/go.mod h1:31ZjvwMMBsssPWR+ZgkvbK5zN86WentgEMVnEdIwagE=
 github.com/kermeow/systray v0.0.0 h1:N178vc5TrIqxwXCJfFIFY3BV4Wm5GOLlFDk86yIa+kw=
 github.com/kermeow/systray v0.0.0/go.mod h1:FZ0jyk3NOkXr04tBSuOMvj/vCTxW+no35SkBobeExBM=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
