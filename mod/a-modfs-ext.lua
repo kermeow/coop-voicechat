@@ -13,6 +13,7 @@ function mod_fs_file_clear(file)
 end
 
 ---@param file ModFsFile
+---@param localIndex integer
 ---@return boolean
 function mod_fs_file_write_player(file, localIndex)
     local lVoiceState = gVoiceStates[localIndex]
