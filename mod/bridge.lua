@@ -4,7 +4,7 @@ local last_version_warning = 0
 local RECV_MOD_FS_NAME = "coop-voicechat-recv"
 local FILE_HEADER = "smvc"
 
--- mod_fs_hide_errors(true)
+mod_fs_hide_errors(true)
 
 gVoiceBridge = {}
 
@@ -30,14 +30,20 @@ gVoiceBridge.settings.suppression = true
 gVoiceBridge.settings.stereoPan = true
 gVoiceBridge.settings.effectStrength = 1
 
+gPlayerSyncTable[0].connected = false
+
 local function bridge_connect()
     gVoiceBridge.connected = true
+    audio_connect()
+    gPlayerSyncTable[0].connected = true
     play_sound(SOUND_GENERAL_COIN, gGlobalSoundSource)
     djui_popup_create("Voice Chat:\n\\#60f060\\Client Connected!", 2)
 end
 
 local function bridge_disconnect()
     gVoiceBridge.connected = false
+    audio_disconnect()
+    gPlayerSyncTable[0].connected = false
     play_sound(SOUND_MENU_PAUSE_HIGHPRIO, gGlobalSoundSource)
     djui_popup_create("Voice Chat:\n\\#ffa060\\Client Disconnected!", 2)
 end

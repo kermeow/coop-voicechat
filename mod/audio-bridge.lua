@@ -44,6 +44,15 @@ local function recv_audio_packet(packet)
     end
 end
 
+function audio_connect()
+end
+
+function audio_disconnect()
+    for i, lVoiceState in pairs(gVoiceStates) do
+        lVoiceState.loudness = -1
+    end
+end
+
 function audio_recv()
     -- get audio data from client
     local stream = gVoiceBridge.recvFs:get_file("stream")
@@ -104,11 +113,13 @@ function audio_send()
     while i < MAX_PLAYERS - 1 do
         i = i + 1
 
+        local lSyncTable = gPlayerSyncTable[i]
         local lVoiceState = gVoiceStates[i]
         local lNetworkPlayer = gNetworkPlayers[i]
 
-        if not lNetworkPlayer.connected then
+        if not (lNetworkPlayer.connected and lSyncTable.connected) then
             if gVoiceBridge.sendFs:get_file(lVoiceState.audioFile) then
+                lVoiceState.loudness = -1
                 gVoiceBridge.sendFs:delete_file(lVoiceState.audioFile)
             end
             goto write
