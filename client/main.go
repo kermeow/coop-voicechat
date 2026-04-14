@@ -11,10 +11,10 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/energye/systray"
 	"github.com/gopxl/beep/v2"
 	"github.com/gopxl/beep/v2/speaker"
 	"github.com/gordonklaus/portaudio"
+	"github.com/kermeow/systray"
 	"github.com/postfinance/single"
 )
 
