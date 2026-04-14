@@ -6,6 +6,7 @@ import (
 	"coop-voicechat/audio/effects"
 	"coop-voicechat/coop"
 	"log"
+	"time"
 
 	"github.com/gopxl/beep/v2/speaker"
 )
@@ -46,7 +47,7 @@ func NewAudioBridge(b *Bridge) *AudioBridge {
 	a.inputStreamer = &audio.InputStreamer{}
 	a.inputStreamer.StartDefault()
 	a.denoiser = effects.NewDenoiser(a.inputStreamer)
-	a.analyzer = &effects.Analyzer{Streamer: a.denoiser}
+	a.analyzer = &effects.Analyzer{Streamer: a.denoiser, WindowSize: audio.SAMPLE_RATE_BEEP.N(50 * time.Millisecond)}
 
 	return a
 }

@@ -3,6 +3,7 @@ package audio
 import (
 	"coop-voicechat/audio/effects"
 	"coop-voicechat/coop"
+	"time"
 )
 
 type PlayerStreamer struct {
@@ -19,7 +20,8 @@ func NewPlayerStreamer(player *coop.Player) *PlayerStreamer {
 		streamer: NewOpusStreamer(),
 	}
 	s.analyzer = &effects.Analyzer{
-		Streamer: s.streamer,
+		Streamer:   s.streamer,
+		WindowSize: SAMPLE_RATE_BEEP.N(50 * time.Millisecond),
 	}
 	s.volume = &effects.Volume{
 		Streamer: s.analyzer,

@@ -7,20 +7,20 @@ import (
 )
 
 type Analyzer struct {
-	Streamer beep.Streamer
+	Streamer   beep.Streamer
+	WindowSize int
 
-	rms float64
+	window []float64
 }
 
 func (a *Analyzer) Stream(samples [][2]float64) (n int, ok bool) {
 	n, ok = a.Streamer.Stream(samples)
-	rms := 0.0
+	w := max(0, len(a.window)-(a.WindowSize+n))
+	win := make([]float64, n)
 	for i := range samples[:n] {
-		vol := (samples[i][0] + samples[i][1]) / 2
-		rms += vol * vol
+		win[i] = float64(samples[i][0]+samples[i][1]) / 2
 	}
-	rms = math.Sqrt(rms / float64(n))
-	a.rms = rms
+	a.window = append(a.window[w:], win...)
 	return n, ok
 }
 
@@ -29,5 +29,9 @@ func (a *Analyzer) Err() error {
 }
 
 func (a *Analyzer) Rms() float64 {
-	return a.rms
+	ms := 0.0
+	for _, sample := range a.window {
+		ms += sample * sample
+	}
+	return math.Sqrt(ms / float64(a.WindowSize))
 }
