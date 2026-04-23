@@ -15,12 +15,14 @@ type Analyzer struct {
 
 func (a *Analyzer) Stream(samples [][2]float64) (n int, ok bool) {
 	n, ok = a.Streamer.Stream(samples)
-	w := max(0, len(a.window)-(a.WindowSize+n))
 	win := make([]float64, n)
 	for i := range samples[:n] {
 		win[i] = float64(samples[i][0]+samples[i][1]) / 2
 	}
-	a.window = append(a.window[w:], win...)
+	a.window = append(a.window, win...)
+	if len(a.window) > a.WindowSize {
+		a.window = a.window[len(a.window)-a.WindowSize:]
+	}
 	return n, ok
 }
 
