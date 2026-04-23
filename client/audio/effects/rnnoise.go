@@ -10,8 +10,10 @@ type Denoiser struct {
 	Bypass   bool
 
 	stream        [][2]float64
+	lastSamples   int
 	denoiseState  *rnnoise.DenoiseState
 	denoiseBuffer []float32
+	vadBuffer     []float32
 	denoiseErr    error
 }
 
@@ -22,8 +24,10 @@ func NewDenoiser(streamer beep.Streamer) *Denoiser {
 		Bypass:   false,
 
 		stream:        make([][2]float64, rnnoise.GetFrameSize()),
+		lastSamples:   0,
 		denoiseState:  denoiseState,
 		denoiseBuffer: make([]float32, 0),
+		vadBuffer:     make([]float32, 0),
 		denoiseErr:    nil,
 	}
 }
@@ -33,6 +37,9 @@ func (d *Denoiser) Stream(samples [][2]float64) (n int, ok bool) {
 
 	filled := d.convert(d.denoiseBuffer, samples)
 	d.denoiseBuffer = d.denoiseBuffer[filled:]
+	d.vadBuffer = d.vadBuffer[d.lastSamples:]
+
+	d.lastSamples = nSamples
 
 	for filled < nSamples {
 		fs := rnnoise.GetFrameSize()
@@ -55,10 +62,15 @@ func (d *Denoiser) Stream(samples [][2]float64) (n int, ok bool) {
 			inBuffer[i] = 32767 * float32(d.stream[i][0]+d.stream[i][1]) / 2
 		}
 
-		_, d.denoiseErr = d.denoiseState.ProcessFrame(d.denoiseBuffer, inBuffer)
+		var vad float32
+		vad, d.denoiseErr = d.denoiseState.ProcessFrame(d.denoiseBuffer, inBuffer)
 
 		if d.denoiseErr != nil {
 			return filled, false
+		}
+
+		for range len(d.denoiseBuffer) {
+			d.vadBuffer = append(d.vadBuffer, vad)
 		}
 
 		copied := d.convert(d.denoiseBuffer, samples[filled:])
