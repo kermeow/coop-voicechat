@@ -27,7 +27,7 @@ func (a *AutoGain) Stream(samples [][2]float64) (n int, ok bool) {
 			peak, rms := a.getPeakAndRMS(sample)
 			_, rmsDb := Amp2Db(peak), Amp2Db(rms)
 
-			if vad && rmsDb < -12 {
+			if vad && rmsDb > -50 {
 				gain := Db2Amp(-18 - rmsDb)
 				samples[i][0] *= gain
 				samples[i][1] *= gain
