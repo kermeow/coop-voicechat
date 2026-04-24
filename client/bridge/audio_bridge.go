@@ -48,8 +48,13 @@ func NewAudioBridge(b *Bridge) *AudioBridge {
 	a.inputStreamer = &audio.InputStreamer{}
 	a.inputStreamer.StartDefault()
 	a.denoiser = effects.NewDenoiser(a.inputStreamer)
-	a.autogain = &effects.AutoGain{Streamer: a.denoiser, WindowSize: audio.SAMPLE_RATE_BEEP.N(20 * time.Millisecond)}
-	a.analyzer = &effects.Analyzer{Streamer: a.autogain, WindowSize: audio.SAMPLE_RATE_BEEP.N(50 * time.Millisecond)}
+	a.autogain = &effects.AutoGain{
+		Streamer:   a.denoiser,
+		WindowSize: audio.SAMPLE_RATE_BEEP.N(20 * time.Millisecond),
+		Attack:     audio.SAMPLE_RATE_BEEP.N(10 * time.Millisecond),
+		Release:    audio.SAMPLE_RATE_BEEP.N(100 * time.Millisecond),
+	}
+	a.analyzer = &effects.Analyzer{Streamer: a.autogain, WindowSize: audio.SAMPLE_RATE_BEEP.N(20 * time.Millisecond)}
 
 	return a
 }

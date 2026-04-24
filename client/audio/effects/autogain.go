@@ -7,11 +7,15 @@ import (
 )
 
 type AutoGain struct {
-	Streamer   beep.Streamer
-	Bypass     bool
+	Streamer beep.Streamer
+	Bypass   bool
+
 	WindowSize int
+	Attack     int
+	Release    int
 
 	window [][2]float64
+	gain   float64
 }
 
 func (a *AutoGain) Stream(samples [][2]float64) (n int, ok bool) {
@@ -25,13 +29,22 @@ func (a *AutoGain) Stream(samples [][2]float64) (n int, ok bool) {
 		for i, sample := range samples[:n] {
 			vad := denoiser.vadBuffer[i] >= 0.9
 			peak, rms := a.getPeakAndRMS(sample)
-			_, rmsDb := Amp2Db(peak), Amp2Db(rms)
+			peakDb, rmsDb := Amp2Db(peak), Amp2Db(rms)
 
-			if vad && rmsDb > -50 {
-				gain := Db2Amp(-18 - rmsDb)
-				samples[i][0] *= gain
-				samples[i][1] *= gain
+			if vad && peakDb > -60 {
+				target, add := Db2Amp(-18-rmsDb), 0.0
+				if target > a.gain {
+					add = float64(target-a.gain) / float64(a.Attack)
+				} else {
+					add = float64(target-a.gain) / float64(a.Attack)
+				}
+				a.gain = min(target, a.gain+add)
+			} else if !vad {
+				a.gain = max(0, a.gain+float64(-a.gain)/float64(a.Release))
 			}
+
+			samples[i][0] *= a.gain
+			samples[i][1] *= a.gain
 		}
 	} else {
 		for i, sample := range samples[:n] {
@@ -39,10 +52,19 @@ func (a *AutoGain) Stream(samples [][2]float64) (n int, ok bool) {
 			_, rmsDb := Amp2Db(peak), Amp2Db(rms)
 
 			if rmsDb > -40 {
-				gain := Db2Amp(-18 - rmsDb)
-				samples[i][0] *= gain
-				samples[i][1] *= gain
+				target, add := Db2Amp(-18-rmsDb), 0.0
+				if target > a.gain {
+					add = float64(target-a.gain) / float64(a.Attack)
+				} else {
+					add = float64(target-a.gain) / float64(a.Attack)
+				}
+				a.gain = min(target, a.gain+add)
+			} else {
+				a.gain = max(0, a.gain+float64(-a.gain)/float64(a.Release))
 			}
+
+			samples[i][0] = math.Tanh(sample[0] * a.gain)
+			samples[i][1] = math.Tanh(sample[1] * a.gain)
 		}
 	}
 
