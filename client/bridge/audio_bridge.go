@@ -27,6 +27,7 @@ type AudioBridge struct {
 	denoiser      *effects.Denoiser
 	autogain      *effects.AutoGain
 	analyzer      *effects.Analyzer
+	volume        *effects.Volume
 
 	inTimestamp int
 	inQueue     []*frame
@@ -55,6 +56,7 @@ func NewAudioBridge(b *Bridge) *AudioBridge {
 		Release:    audio.SAMPLE_RATE_BEEP.N(100 * time.Millisecond),
 	}
 	a.analyzer = &effects.Analyzer{Streamer: a.autogain, WindowSize: audio.SAMPLE_RATE_BEEP.N(20 * time.Millisecond)}
+	a.volume = &effects.Volume{Streamer: a.analyzer, Volume: 1.0}
 
 	return a
 }
@@ -62,9 +64,9 @@ func NewAudioBridge(b *Bridge) *AudioBridge {
 func (a *AudioBridge) encodeNext() {
 	samples := make([][2]float64, audio.OPUS_FRAME_SAMPLES)
 
-	n, ok := a.analyzer.Stream(samples)
+	n, ok := a.volume.Stream(samples)
 	if n < audio.OPUS_FRAME_SAMPLES || !ok {
-		log.Println("Error streaming input:", a.analyzer.Err())
+		log.Println("Error streaming input:", a.volume.Err())
 		return
 	}
 
